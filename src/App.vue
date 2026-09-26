@@ -1,75 +1,175 @@
 <script setup>
 import { ref } from 'vue'
 
-const next_steps = ref('')
-const individual_steps = ref(0)
-const complete_loops = ref(0)
+const bigState = ref({})
 
-const steps = ref([
-    {text: "Steps", class: "currentIndex"},
-    {text: "show"},
-    {text: "up"},
-    {text: "here"},
-])
+function saveState() {
+  const parsed = JSON.stringify(bigState.value)
+  localStorage.setItem('stitchState', parsed)
+}
 
-const index = ref(0)
-const currentMax = ref(steps.value.length)
+function stateDefaults() {
+    return {
+        next_steps: '',
+        individual_steps: 0,
+        complete_loops: 0,
+        index: 0,
+        steps: [
+            {text: "Steps", class: "currentIndex"},
+            {text: "show"},
+            {text: "up"},
+            {text: "here"},
+        ],
+        round: 1,
+    }
+}
+
+function loadState() {
+    bigState.value = stateDefaults()
+    if (localStorage.getItem('stitchState')) {
+        try {
+            const stored = JSON.parse(localStorage.getItem('stitchState'))
+            if (stored.next_steps) {
+                bigState.value.next_steps = stored.next_steps
+            }
+            if (stored.individual_steps) {
+                bigState.value.individual_steps = stored.individual_steps
+            }
+            if (stored.complete_loops) {
+                bigState.value.complete_loops = stored.complete_loops
+            }
+            if (stored.index) {
+                bigState.value.index = stored.index
+            }
+            if (stored.steps) {
+                bigState.value.steps = stored.steps
+            }
+            if (stored.round) {
+                bigState.value.round = stored.round
+            }
+        } catch (e) {
+            localStorage.removeItem('stitchState')
+        }
+    }
+    saveState()
+}
 
 function onInput(e) {
-    next_steps.value = e.target.value
+    bigState.value.next_steps = e.target.value
+}
+
+function highlightThing(prev_idx, next_idx) {
+    bigState.value.steps[prev_idx].class = "nothin"
+    bigState.value.steps[next_idx].class = "currentIndex"
+    saveState()
 }
 
 function splitText() {
-    index.value = 0
-    individual_steps.value = 0
-    complete_loops.value = 0
-    let strs = next_steps.value.split(" ")
-    currentMax.value = strs.length
-    steps.value = []
+    bigState.value.index = 0
+    bigState.value.individual_steps = 0
+    bigState.value.steps = []
+    bigState.value.complete_loops = 0
+    let strs = bigState.value.next_steps.trim().split(/[ ]+/)
     for (let i = 0; i < strs.length; i++) {
-        steps.value.push({text: strs[i], class: "nothin"})
+        bigState.value.steps.push({text: strs[i], class: "nothin"})
     }
-    steps.value[0].class = "currentIndex"
-    next_steps.value = ''
+    highlightThing(0, 0)
+    bigState.value.next_steps = ''
+    saveState()
 }
 
 function nextSubStep() {
-    steps.value[index.value].class = "nothin"
-    index.value++
-    individual_steps.value++
-    if (index.value >= currentMax.value) {
-        index.value = 0
-        complete_loops.value++
+    const prev_idx = bigState.value.index
+    bigState.value.index++
+    bigState.value.individual_steps++
+    if (bigState.value.index >= bigState.value.steps.length) {
+        bigState.value.index = 0
+        bigState.value.complete_loops++
     }
-    steps.value[index.value].class = "currentIndex"
+    const next_idx = bigState.value.index
+    highlightThing(prev_idx, next_idx)
+}
+
+function prevSubStep() {
+    const prev_idx = bigState.value.index
+    bigState.value.index--
+    bigState.value.individual_steps--
+    if (bigState.value.individual_steps <= 0) {
+        bigState.value.index = 0
+        bigState.value.individual_steps = 0
+        highlightThing(prev_idx, 0)
+        return
+    }
+    if (bigState.value.index < 0) {
+        bigState.value.index = bigState.value.steps.length - 1
+        bigState.value.complete_loops--
+    } 
+    const next_idx = bigState.value.index
+    highlightThing(prev_idx, next_idx)
 }
 
 function checkIt(event) {
     let input_elem = document.getElementById('topInput')
     if (event.key == " " && event.target != input_elem) {
         nextSubStep()
+        return
     }
+    if (event.key == "Backspace" && event.target != input_elem) {
+        prevSubStep()
+        return
+    }
+    if (event.key == "-" && event.target != input_elem) {
+        decrementRound()
+        return
+    }
+    if (event.key == "p" && event.target != input_elem) {
+        incrementRound()
+        return
+    }
+    //console.log(event)
+}
+
+function decrementRound() {
+    if (bigState.value.round <= 1) {
+        return
+    }
+    bigState.value.round--
+    saveState()
+}
+
+function incrementRound() {
+    bigState.value.round++
+    saveState()
 }
 
 window.addEventListener('keyup', checkIt)
+window.onload = loadState;
 
 </script>
 
 <template>
     <input id="topInput" @keyup.enter="splitText" :value="next_steps" @input="onInput" placeholder="Current Round Here" />
-    <button @click="splitText">Go!</button>
+    <button class="bigButton" @click="splitText">Set Steps</button>
     <br />
-    <span v-for="step in steps" :key=step.text :class=step.class>
+    <span v-for="step in bigState.steps" :key=step.text :class=step.class>
         {{ step.text + " "}}
     </span>
-    <p>Complete Loops: {{ complete_loops }}</p>
-    <p>Individual Steps: {{ individual_steps }}</p>
-    <button @click="nextSubStep">Next Sub Step</button>
+    <p>Complete Loops: {{ bigState.complete_loops }}</p>
+    <p>Individual Steps: {{ bigState.individual_steps }}</p>
+    <button class="bigButton" @click="prevSubStep">Prev Step</button>
+    <button class="bigButton" @click="nextSubStep">Next Step</button>
+    <br/><br/>
+        <button class="bigButton" @click="decrementRound">-Round</button>
+        <span>Round Number: {{ bigState.round }}</span>
+        <button class="bigButton" @click="incrementRound">+Round</button>
 </template>
 
 <style>
 body {
   background-color: #333333;
+}
+.bigButton {
+  font-size: 20pt;
 }
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
@@ -82,5 +182,9 @@ body {
 }
 .currentIndex {
     color: red;
+}
+#topInput {
+  line-height: 24pt;
+  vertical-align: bottom;
 }
 </style>
