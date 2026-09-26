@@ -1,0 +1,8 @@
+Title: Moth Wing
+// Allow comments
+r: mr-sc*6 (6)      // Single crochet 6 into a magic ring
+r: [inc sc]*3 (9)       // Validate the stitch count which is stitches you end up with (e.g. increase makes 2), optional
+r: sc*9 (9)
+r: [inc sc*2]*3 (12)
+r: sc*3 dec [sc*6 dec]*2 sc*3
+// Future improvement: Parentheses, granny squares
