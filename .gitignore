@@ -5,6 +5,8 @@ dist
 dist-ssr
 coverage
 *.local
+
+# build directory
 stitch
 
 # local env files
