@@ -18,7 +18,7 @@ export default defineConfig({
     },
   },
   build: {
-      outDir: './stitch/'
+    outDir: './stitch/',
   },
-  base: '/stitch/'
+  base: '/stitch/',
 })
