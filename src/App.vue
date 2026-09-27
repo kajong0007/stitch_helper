@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import CurrentRow from './components/CurrentRow.vue'
+import { parse as gParse } from './grammar'
 
 interface BigState {
   next_steps?: string
@@ -36,6 +37,10 @@ const row = {
 function saveState() {
   const parsed = JSON.stringify(bigState.value)
   localStorage.setItem('stitchState', parsed)
+}
+
+function runParser(s: string) {
+  return gParse(s)
 }
 
 function stateDefaults() {
@@ -178,6 +183,7 @@ function incrementRound() {
 
 window.addEventListener('keyup', checkIt)
 window.onload = loadState
+window.testRunParser = runParser
 </script>
 
 <template>

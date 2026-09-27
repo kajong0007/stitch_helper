@@ -15,7 +15,7 @@
     "lint:oxlint": "oxlint . --fix",
     "lint:eslint": "eslint . --fix --cache",
     "format": "prettier --write --experimental-cli src/",
-    "gen-grammar": "peggy -c peggy_config.js src/grammar.peggyjs"
+    "gen-grammar": "peggy --format es -c peggy_config.js src/grammar.pegjs"
   },
   "dependencies": {
     "vue": "^3.5.42"
