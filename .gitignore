@@ -9,6 +9,10 @@ coverage
 # build directory
 stitch
 
+# generated files
+src/grammar.d.ts
+src/grammar.js
+
 # local env files
 .env.local
 .env.*.local
@@ -43,3 +47,5 @@ __screenshots__/
 
 # Vite
 *.timestamp-*-*.mjs
+
+

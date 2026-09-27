@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "predev": "run-p gen-grammar",
     "dev": "vite",
+    "prebuild": "run-p gen-grammar",
     "build": "run-p type-check \"build-only {@}\" --",
     "preview": "vite preview",
     "build-only": "vite build",
@@ -12,7 +14,8 @@
     "lint": "run-s \"lint:*\"",
     "lint:oxlint": "oxlint . --fix",
     "lint:eslint": "eslint . --fix --cache",
-    "format": "prettier --write --experimental-cli src/"
+    "format": "prettier --write --experimental-cli src/",
+    "gen-grammar": "peggy -c peggy_config.js src/grammar.peggyjs"
   },
   "dependencies": {
     "vue": "^3.5.42"
@@ -31,6 +34,7 @@
     "jiti": "^2.7.0",
     "npm-run-all2": "^9.0.3",
     "oxlint": "~1.82.0",
+    "peggy": "^5.1.0",
     "prettier": "3.9.6",
     "typescript": "~6.0.0",
     "vite": "^8.2.2",
