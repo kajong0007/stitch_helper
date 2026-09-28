@@ -19,9 +19,6 @@ export default defineConfig({
   },
   build: {
     outDir: './stitch/',
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
-    },
   },
-  base: '/stitch/'
+  base: '/stitch/',
 })

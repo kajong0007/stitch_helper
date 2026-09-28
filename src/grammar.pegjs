@@ -1,37 +1,86 @@
 Pattern
-= Title? 
+= title:Title? 
   (MaybeWhitespace? EOL)*
-  RowOrComment|.., (MaybeWhitespace? EOL)*|
+  rows:RowOrComment|.., (MaybeWhitespace? EOL)*| {
+  return {
+    "title": title,
+    "rounds": rows,
+  }
+}
 
 RowOrComment
-= Row Comment?
-  / Comment
+= r:Row t:TotalStitches? MaybeWhitespace c:Comment? {
+  let row = {
+    "row": r,
+  }
+  if (t) {
+    row.total_stitches = t
+  }
+  if (c) {
+    row.comment = c
+  }
+  return row
+}
+  / c:Comment {
+  return c
+}
 
 Title
 = ('title' MaybeWhitespace ':')
-  MaybeWhitespace $[^\r\n]* '\r'? '\n'
+  MaybeWhitespace title:[^\r\n]* '\r'? '\n' {
+  return title.join("")
+}
 
 Row
-= ('r:') MaybeWhitespace Items
+= ('r:') MaybeWhitespace items:Items {
+  return items
+}
+
+TotalStitches
+= '(' digits:[0-9]+ ')' {
+  return parseInt(digits.join(""), 10)
+}
 
 Items
-= Item|..,DefinitelyWhitespace| MaybeWhitespace Comment?
+= itemlist:Item|..,DefinitelyWhitespace| MaybeWhitespace {
+  return itemlist
+}
 
 Token
-= token:[a-zA-Z]+ { return token.join(""); }
+= token:[a-zA-Z]+ multi:Multiplier? {
+  let ret = {
+    "token": token.join(""),
+    "count": 1,
+  }
+  if (multi) {
+    ret["count"] = multi
+  }
+  return ret;
+}
 
 Multiplier
 = '*' digits:[0-9]+ { return parseInt(digits.join(""), 10); }
 
 Item
-= (
-    Token
-    / '[' MaybeWhitespace Items MaybeWhitespace ']'
-  )
-  Multiplier?
+= t:Token { return t }
+  / s:SubItem { return s }
+
+SubItem
+= '['
+      MaybeWhitespace items:Items MaybeWhitespace
+  ']' multi:Multiplier? {
+  let ret = {
+    "item": items,
+    "count": 1,
+  }
+  if (multi) {
+    ret["count"] = multi
+  }
+  return ret
+}
 
 MaybeWhitespace
-= HorizontalWhitespace* { }
+= HorizontalWhitespace*
 
 DefinitelyWhitespace
 = HorizontalWhitespace+
@@ -43,10 +92,17 @@ EOL
 = '\r'? '\n'
 
 Comment
-= $OnelineComment / $MultilineComment
+= one:OnelineComment {
+    return {"onecomment": one}
+  }
+  / multi:MultilineComment {
+  return {"multicomment": multi}
+}
 
 OnelineComment
-= '/' '/' [^\n]*
+= '//' text:[^\n]* { return text.join('') }
 
 MultilineComment
-= '/*' ('/' / '*' !'/' / [^*/])* ('*'+ '/')
+= '/*' text:('/' / '*' !'/' / [^*/])* ('*/') {
+  return text.join('')
+}

@@ -183,6 +183,13 @@ function incrementRound() {
 
 window.addEventListener('keyup', checkIt)
 window.onload = loadState
+
+declare global {
+  interface Window {
+    testRunParser: typeof runParser
+  }
+}
+
 window.testRunParser = runParser
 </script>
 
