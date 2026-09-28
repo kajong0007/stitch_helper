@@ -70,7 +70,7 @@ SubItem
       MaybeWhitespace items:Items MaybeWhitespace
   ']' multi:Multiplier? {
   let ret = {
-    "item": items,
+    "items": items,
     "count": 1,
   }
   if (multi) {
