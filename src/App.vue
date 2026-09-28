@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import CurrentRow from './components/CurrentRow.vue'
 
 interface BigState {
   next_steps?: string
@@ -11,6 +12,26 @@ interface BigState {
 }
 
 const bigState = ref<BigState>({})
+
+const item1 = {
+  token: { stitch: 'sc' },
+  count: 2,
+}
+const subitem2_1 = {
+  token: { stitch: 'sc' },
+  count: 1,
+}
+const subitem2_2 = {
+  token: { stitch: 'dec' },
+  count: 1,
+}
+const item2 = {
+  token: { items: [subitem2_1, subitem2_2] },
+  count: 4,
+}
+const row = {
+  items: [item1, item2],
+}
 
 function saveState() {
   const parsed = JSON.stringify(bigState.value)
@@ -169,13 +190,14 @@ window.onload = loadState
   />
   <button class="bigButton" @click="splitText">Set Steps</button>
   <br />
-  <span v-for="step in bigState.steps" :key="step.text" :class="step.class">
+  <CurrentRow :row="row" />
+  <!-- <span v-for="step in bigState.steps" :key="step.text" :class="step.class">
     {{ step.text + ' ' }}
   </span>
   <p>Complete Loops: {{ bigState.complete_loops }}</p>
   <p>Individual Steps: {{ bigState.individual_steps }}</p>
   <button class="bigButton" @click="prevSubStep">Prev Step</button>
-  <button class="bigButton" @click="nextSubStep">Next Step</button>
+  <button class="bigButton" @click="nextSubStep">Next Step</button> -->
   <br /><br />
   <button class="bigButton" @click="decrementRound">-Round</button>
   <span>Round Number: {{ bigState.round }}</span>
