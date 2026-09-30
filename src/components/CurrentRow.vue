@@ -14,30 +14,16 @@ const item_displays = useTemplateRef('itemDisplays')
 function nextSubStep(): void {
   // TODO: support inc
   individual_step_count.value++
-  if (cur_index.value >= row.items.length) {
-    cur_index.value = 0
-    complete_loop_count.value++
-  }
   item_displays.value![cur_index.value]!.nextStitch()
 }
 
 function prevSubStep(): void {
-  cur_index.value--
   // TODO: support inc
   individual_step_count.value--
-
-  // Reached beginning
-  if (individual_step_count.value <= 0) {
-    cur_index.value = 0
+  if (individual_step_count.value < 0) {
     individual_step_count.value = 0
-    return
   }
-
-  // Reached beginning of loop
-  if (cur_index.value < 0) {
-    cur_index.value = row.items.length - 1
-    complete_loop_count.value--
-  }
+  item_displays.value![cur_index.value]!.prevStitch()
 }
 
 function nextItem(): void {
@@ -45,6 +31,18 @@ function nextItem(): void {
   if (cur_index.value >= row.items.length) {
     cur_index.value = 0
     complete_loop_count.value++
+  }
+}
+
+function prevItem(): void {
+  cur_index.value--
+  if (cur_index.value < 0) {
+    cur_index.value = 0
+    complete_loop_count.value--
+    if (complete_loop_count.value < 0) {
+      // TODO: Go to previous row
+      complete_loop_count.value = 0
+    }
   }
 }
 </script>
@@ -56,6 +54,7 @@ function nextItem(): void {
     ref="itemDisplays"
     :item="item"
     :next-item="nextItem"
+    :prev-item="prevItem"
     :is_cur_item="cur_index === index"
   />
   <p>Complete Loops: {{ complete_loop_count }}</p>

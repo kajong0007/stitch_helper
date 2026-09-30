@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, useTemplateRef } from 'vue'
 
-const { item, nextItem, is_cur_item } = defineProps<{
+const { item, nextItem, prevItem, is_cur_item } = defineProps<{
   item: Item
   nextItem: () => void
+  prevItem: () => void
   is_cur_item: boolean
 }>()
 
@@ -12,7 +13,6 @@ const cur_index = ref(0)
 const subitems = useTemplateRef('subitems')
 
 function nextSubitem(): void {
-  console.log('In nextSubitem')
   cur_index.value++
   if (cur_index.value === item.items?.length) {
     count.value++
@@ -20,6 +20,18 @@ function nextSubitem(): void {
     if (count.value === item.count) {
       count.value = 0
       nextItem()
+    }
+  }
+}
+
+function prevSubitem(): void {
+  cur_index.value--
+  if (cur_index.value < 0) {
+    count.value--
+    cur_index.value = 0
+    if (count.value < 0) {
+      count.value = 0
+      prevItem()
     }
   }
 }
@@ -35,7 +47,20 @@ function nextStitch(): void {
   }
   subitems.value![cur_index.value]!.nextStitch()
 }
-defineExpose({ nextStitch })
+
+function prevStitch(): void {
+  if (item.stitch) {
+    count.value--
+    if (count.value < 0) {
+      count.value = 0
+      prevItem()
+    }
+    return
+  }
+  subitems.value![cur_index.value]!.prevStitch()
+}
+
+defineExpose({ nextStitch, prevStitch })
 </script>
 
 <template>
@@ -50,6 +75,7 @@ defineExpose({ nextStitch })
       ref="subitems"
       :item="subitem"
       :next-item="nextSubitem"
+      :prev-item="prevSubitem"
       :is_cur_item="is_cur_item && index === cur_index"
     />
     ]*{{ item.count - count }}
