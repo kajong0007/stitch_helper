@@ -42,6 +42,10 @@ function prevSubStep(): void {
 
 function nextItem(): void {
   cur_index.value++
+  if (cur_index.value >= row.items.length) {
+    cur_index.value = 0
+    complete_loop_count.value++
+  }
 }
 </script>
 

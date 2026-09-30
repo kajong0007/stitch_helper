@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { h, ref, type VNode } from 'vue'
+import { ref, useTemplateRef } from 'vue'
 
 const { item, nextItem, is_cur_item } = defineProps<{
   item: Item
@@ -9,53 +9,49 @@ const { item, nextItem, is_cur_item } = defineProps<{
 
 const count = ref(0)
 const cur_index = ref(0)
-let vnode = buildItemElement(item, is_cur_item)
+const subitems = useTemplateRef('subitems')
 
-function buildItemElement(item: Item, is_cur_item: boolean): VNode {
-  if (item.stitch) {
-    const css_class = is_cur_item ? 'currentIndex' : 'nothin'
-    const remaining_stitches = item.count - count.value
-    console.log('remaining stitches: ' + remaining_stitches)
-    const value = h('span', { class: css_class }, item.stitch + '*' + remaining_stitches)
-    console.log(value)
-    return value
+function nextSubitem(): void {
+  console.log('In nextSubitem')
+  cur_index.value++
+  if (cur_index.value === item.items?.length) {
+    count.value++
+    cur_index.value = 0
+    if (count.value === item.count) {
+      count.value = 0
+      nextItem()
+    }
   }
-  if (!item.items) {
-    return h('span', 'Error: item has no stitch or items list')
-  }
-
-  const children: (string | VNode)[] = ['[']
-  // This should be creating ItemDisplay objects shouldn't it
-  // for (let i = 0; i < item.items.length; i++) {
-  //   const subitem = item.items[i]
-  //   const subitem_display = h('ItemDisplay', {
-  //     item: subitem,
-  //     nextItem: nextItem,
-  //     is_cur_item: i === cur_index.value,
-  //   })
-  //   children.push(subitem_display)
-  // }
-  children.push(
-    ...item.items.map((subitem, index) => buildItemElement(subitem, index === cur_index.value)),
-  )
-  children.push(']')
-  return h('span', children)
 }
 
-function nextStitch() {
-  console.log('In next stitch!')
-  count.value++
-  if (
-    (item.stitch && count.value === item.count) ||
-    (item.items && count.value === item.items.length)
-  ) {
-    nextItem()
+function nextStitch(): void {
+  if (item.stitch) {
+    count.value++
+    if (count.value === item.count) {
+      count.value = 0
+      nextItem()
+    }
+    return
   }
-  vnode = buildItemElement(item, is_cur_item)
+  subitems.value![cur_index.value]!.nextStitch()
 }
 defineExpose({ nextStitch })
 </script>
 
 <template>
-  <vnode />
+  <span v-if="item.stitch" :class="{ nothin: !is_cur_item, highlighted: is_cur_item }">
+    {{ item.stitch }}*{{ item.count - count }}
+  </span>
+  <span v-if="item.items">
+    [
+    <ItemDisplay
+      v-for="(subitem, index) in item.items"
+      :key="index"
+      ref="subitems"
+      :item="subitem"
+      :next-item="nextSubitem"
+      :is_cur_item="is_cur_item && index === cur_index"
+    />
+    ]*{{ item.count - count }}
+  </span>
 </template>

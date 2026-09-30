@@ -220,7 +220,7 @@ body {
   margin-top: 60px;
   font-size: 24pt;
 }
-.currentIndex {
+.highlighted {
   color: red;
 }
 #topInput {
