@@ -36,8 +36,9 @@ function isItem(value: any): value is Item {
   if (!value.items) return false
   if (typeof value.count !== 'number') return false
   if (!(value.items instanceof Array)) return false
-  for (const i in value.items) {
-    if (!(isStitch(i) || isItem(i))) {
+  for (var i = 0; i < value.items.length; i++) {
+    const x = value.items[i]
+    if (!(isStitch(x) || isItem(x))) {
       return false
     }
   }
@@ -48,9 +49,10 @@ function isRow(value: any): value is Row {
   if (typeof value !== 'object') return false
   if (value.total_stitches && typeof value.total_stitches !== 'number') return false
   if (!value.items) return false
-  if (typeof value.items !== 'object') return false
-  for (const i in value.items) {
-    if (!(isStitch(i) || isItem(i))) {
+  if (!(value.items instanceof Array)) return false
+  for (var i = 0; i < value.items.length; i++) {
+    const x = value.items[i]
+    if (!(isStitch(x) || isItem(x))) {
       return false
     }
   }
@@ -62,8 +64,8 @@ function isPattern(value: any): value is Pattern {
   if (!value.rounds) return false
   if (value.title && typeof value.title !== 'string') return false
   if (!(value.rounds instanceof Array)) return false
-  for (const r in value.rounds) {
-    if (!isRow(r)) {
+  for (var i = 0; i < value.rounds.length; i++) {
+    if (!isRow(value.rounds[i])) {
       return false
     }
   }
@@ -106,8 +108,14 @@ function saveState() {
   localStorage.setItem('stitchState', parsed)
 }
 
-function runParser(s: string) {
-  return gParse(s)
+function runParser(s: string): (void|Pattern) {
+  const maybe_parsed = gParse(s)
+  if (isPattern(maybe_parsed)) {
+    const p: Pattern = maybe_parsed
+    return p
+  } else {
+    console.log(maybe_parsed)
+  }
 }
 
 function stateDefaults() {
@@ -127,14 +135,16 @@ function stateDefaults() {
 }
 
 function loadState() {
-  const maybe_pattern = gParse(`
-title: Jack Stuff
+  const p: (Pattern|void) = runParser(`title: Jack Stuff
 r: sc*10
 r: [sc sc]*3
-r: inc*3 sc*2
-`)
-  if (isPattern(maybe_pattern)) {
-    const pattern: Pattern = maybe_pattern
+r: inc*3 sc*2`)
+  if (!p) {
+    console.log("augh!")
+    console.log(p)
+  } else {
+    console.log("awao")
+    console.log(p)
   }
   bigState.value = stateDefaults()
   if (localStorage.getItem('stitchState')) {

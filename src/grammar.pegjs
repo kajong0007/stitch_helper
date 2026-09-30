@@ -11,7 +11,7 @@ Pattern
 RowOrComment
 = r:Row t:TotalStitches? MaybeWhitespace c:Comment? {
   let row = {
-    "row": r,
+    "items": r,
   }
   if (t) {
     row.total_stitches = t
