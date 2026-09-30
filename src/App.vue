@@ -3,6 +3,73 @@ import { ref } from 'vue'
 import CurrentRow from './components/CurrentRow.vue'
 import { parse as gParse } from './grammar'
 
+interface Stitch {
+  token: string
+  count: number
+}
+
+interface Item {
+  items: (Stitch | Item)[]
+  count: number
+}
+
+interface Row {
+  items: (Stitch | Item)[]
+  total_stitches?: number
+}
+
+interface Pattern {
+  title?: string
+  rounds: Row[]
+}
+
+function isStitch(value: any): value is Stitch {
+  if (typeof value !== 'object') return false
+  if (!value.token) return false
+  if (!value.count) return false
+  return typeof value.token === 'string' && typeof value.count == 'number'
+}
+
+function isItem(value: any): value is Item {
+  if (typeof value !== 'object') return false
+  if (!value.count) return false
+  if (!value.items) return false
+  if (typeof value.count !== 'number') return false
+  if (!(value.items instanceof Array)) return false
+  for (const i in value.items) {
+    if (!(isStitch(i) || isItem(i))) {
+      return false
+    }
+  }
+  return true
+}
+
+function isRow(value: any): value is Row {
+  if (typeof value !== 'object') return false
+  if (value.total_stitches && typeof value.total_stitches !== 'number') return false
+  if (!value.items) return false
+  if (typeof value.items !== 'object') return false
+  for (const i in value.items) {
+    if (!(isStitch(i) || isItem(i))) {
+      return false
+    }
+  }
+  return true
+}
+
+function isPattern(value: any): value is Pattern {
+  if (typeof value !== 'object') return false
+  if (!value.rounds) return false
+  if (value.title && typeof value.title !== 'string') return false
+  if (!(value.rounds instanceof Array)) return false
+  for (const r in value.rounds) {
+    if (!isRow(r)) {
+      return false
+    }
+  }
+  return true
+}
+
 interface BigState {
   next_steps?: string
   individual_steps?: number
@@ -60,6 +127,15 @@ function stateDefaults() {
 }
 
 function loadState() {
+  const maybe_pattern = gParse(`
+title: Jack Stuff
+r: sc*10
+r: [sc sc]*3
+r: inc*3 sc*2
+`)
+  if (isPattern(maybe_pattern)) {
+    const pattern: Pattern = maybe_pattern
+  }
   bigState.value = stateDefaults()
   if (localStorage.getItem('stitchState')) {
     try {
