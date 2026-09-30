@@ -14,19 +14,19 @@ interface BigState {
 const bigState = ref<BigState>({})
 
 const item1 = {
-  token: { stitch: 'sc' },
+  stitch: 'sc',
   count: 2,
 }
 const subitem2_1 = {
-  token: { stitch: 'sc' },
+  stitch: 'sc',
   count: 1,
 }
 const subitem2_2 = {
-  token: { stitch: 'dec' },
+  stitch: 'dec',
   count: 1,
 }
 const item2 = {
-  token: { items: [subitem2_1, subitem2_2] },
+  items: [subitem2_1, subitem2_2],
   count: 4,
 }
 const row = {

@@ -1,4 +1,5 @@
 interface Item {
-  token: Token
+  stitch?: string
+  items?: Item[]
   count: number
 }
