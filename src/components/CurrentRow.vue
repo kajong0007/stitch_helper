@@ -28,7 +28,9 @@ function prevSubStep(): void {
 
 function nextItem(): void {
   cur_index.value++
+  // Completed the row
   if (cur_index.value >= row.items.length) {
+    // TODO: Go to next row
     cur_index.value = 0
     complete_loop_count.value++
   }
@@ -36,14 +38,17 @@ function nextItem(): void {
 
 function prevItem(): void {
   cur_index.value--
+  // Reached start of row
   if (cur_index.value < 0) {
+    // TODO: move to prev row
     cur_index.value = 0
     complete_loop_count.value--
     if (complete_loop_count.value < 0) {
-      // TODO: Go to previous row
       complete_loop_count.value = 0
     }
+    return
   }
+  item_displays.value![cur_index.value]!.prevStitch()
 }
 </script>
 

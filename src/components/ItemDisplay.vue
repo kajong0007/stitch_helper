@@ -14,33 +14,46 @@ const subitems = useTemplateRef('subitems')
 
 function nextSubitem(): void {
   cur_index.value++
+  // Completed a loop
   if (cur_index.value === item.items?.length) {
     count.value++
     cur_index.value = 0
+    // Completed all loops of this item
     if (count.value === item.count) {
-      count.value = 0
       nextItem()
+      return
+    }
+    for (const item of subitems.value!) {
+      item!.reset()
     }
   }
 }
 
 function prevSubitem(): void {
   cur_index.value--
+  // Backing up past the beginning of this loop
   if (cur_index.value < 0) {
     count.value--
     cur_index.value = 0
+    // If this was the first loop, move to prev item
     if (count.value < 0) {
       count.value = 0
       prevItem()
+      return
+    }
+    // If this was not the first loop, moved to end of prev loop
+    cur_index.value = item.items!.length - 1
+    for (const item of subitems.value!) {
+      item!.resetToMax()
     }
   }
+  subitems.value![cur_index.value]!.prevStitch()
 }
 
 function nextStitch(): void {
   if (item.stitch) {
     count.value++
     if (count.value === item.count) {
-      count.value = 0
       nextItem()
     }
     return
@@ -60,7 +73,15 @@ function prevStitch(): void {
   subitems.value![cur_index.value]!.prevStitch()
 }
 
-defineExpose({ nextStitch, prevStitch })
+function reset(): void {
+  count.value = 0
+}
+
+function resetToMax(): void {
+  count.value = item.count
+}
+
+defineExpose({ nextStitch, prevStitch, reset, resetToMax })
 </script>
 
 <template>
