@@ -82,11 +82,18 @@ function resetToMax(): void {
 }
 
 defineExpose({ nextStitch, prevStitch, reset, resetToMax })
+
+function getCountDisplay(): string {
+  if (item.count === 1) {
+    return ''
+  }
+  return '*' + (item.count - count.value)
+}
 </script>
 
 <template>
   <span v-if="item.stitch" :class="{ nothin: !is_cur_item, highlighted: is_cur_item }">
-    {{ item.stitch }}*{{ item.count - count }}
+    {{ item.stitch + getCountDisplay() }}
   </span>
   <span v-if="item.items">
     [
@@ -99,6 +106,13 @@ defineExpose({ nextStitch, prevStitch, reset, resetToMax })
       :prev-item="prevSubitem"
       :is_cur_item="is_cur_item && index === cur_index"
     />
-    ]*{{ item.count - count }}
+    ]{{ getCountDisplay() }}
   </span>
 </template>
+
+<style>
+span {
+  margin-left: 0.2em;
+  margin-right: 0.2em;
+}
+</style>
