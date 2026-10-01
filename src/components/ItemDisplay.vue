@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { ref, useTemplateRef } from 'vue'
 
-const { item, nextItem, prevItem, is_cur_item } = defineProps<{
+const { item, nextItem, prevItem, is_cur_item, init_end_of_row } = defineProps<{
   item: Item
   nextItem: () => void
   prevItem: () => void
   is_cur_item: boolean
+  init_end_of_row: boolean
 }>()
 
-const count = ref(0)
+// If we are initializing for end of row, the last item needs to have 1 stitch left, all other items should appear complete
+const count = ref(init_end_of_row ? (is_cur_item ? item.count - 1 : item.count) : 0)
 const cur_index = ref(0)
 const subitems = useTemplateRef('subitems')
 
@@ -41,7 +43,7 @@ function prevSubitem(): void {
       prevItem()
       return
     }
-    // If this was not the first loop, moved to end of prev loop
+    // If this was not the first loop, move to end of prev loop
     cur_index.value = item.items!.length - 1
     for (const item of subitems.value!) {
       item!.resetToMax()
@@ -105,6 +107,7 @@ function getCountDisplay(): string {
       :next-item="nextSubitem"
       :prev-item="prevSubitem"
       :is_cur_item="is_cur_item && index === cur_index"
+      :init_end_of_row="init_end_of_row"
     />
     ]{{ getCountDisplay() }}
   </span>

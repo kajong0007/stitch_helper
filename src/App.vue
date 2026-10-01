@@ -5,6 +5,7 @@ import { parse as gParse } from './grammar'
 
 const pattern = ref()
 const pattern_complete = ref(false)
+const init_end_of_row = ref(false)
 
 function isItem(value: any): value is Item {
   if (typeof value !== 'object') return false
@@ -145,6 +146,7 @@ function splitText() {
   bigState.value.individual_steps = 0
   bigState.value.steps = []
   bigState.value.complete_loops = 0
+  pattern_complete.value = false
   const strs = bigState.value.next_steps!.trim().split(/[ ]+/)
   for (let i = 0; i < strs.length; i++) {
     bigState.value.steps.push({ text: strs[i]!, class: 'nothin' })
@@ -156,6 +158,7 @@ function splitText() {
 
 function nextRow(): void {
   bigState.value.index!++
+  init_end_of_row.value = false
   if (bigState.value.index! >= pattern.value.rows.length) {
     bigState.value.index = pattern.value.rows.length - 1
     pattern_complete.value = true
@@ -167,7 +170,10 @@ function prevRow(): void {
   // Reached start of pattern
   if (bigState.value.index! < 0) {
     bigState.value.index = 0
+    return
   }
+  // Move to the end of the prev row
+  init_end_of_row.value = true
 }
 
 function nextSubStep() {
@@ -230,10 +236,12 @@ window.onload = loadState
   <br />
   <CurrentRow
     v-if="!pattern_complete"
+    :key="bigState.index"
     :row="pattern ? pattern.rows[bigState.index!] : { items: [] }"
     :row_num="bigState.index! + 1"
     :next-row="nextRow"
     :prev-row="prevRow"
+    :init_end_of_row="init_end_of_row"
   />
   <span v-if="pattern_complete">Pattern complete!</span>
   <br /><br />
