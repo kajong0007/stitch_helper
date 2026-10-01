@@ -4,6 +4,7 @@ import CurrentRow from './components/CurrentRow.vue'
 import { parse as gParse } from './grammar'
 
 const pattern = ref()
+const pattern_complete = ref(false)
 
 function isItem(value: any): value is Item {
   if (typeof value !== 'object') return false
@@ -59,7 +60,6 @@ interface BigState {
   complete_loops?: number
   index?: number
   steps?: { text: string; class?: string }[]
-  round?: number
 }
 
 const bigState = ref<BigState>({})
@@ -91,7 +91,6 @@ function stateDefaults() {
       { text: 'up' },
       { text: 'here' },
     ],
-    round: 1,
   }
 }
 
@@ -114,9 +113,6 @@ function loadState() {
       }
       if (stored.steps) {
         bigState.value.steps = stored.steps
-      }
-      if (stored.round) {
-        bigState.value.round = stored.round
       }
     } catch (e: unknown) {
       console.log(e)
@@ -156,6 +152,22 @@ function splitText() {
   highlightThing(0, 0)
   bigState.value.next_steps = ''
   saveState()
+}
+
+function nextRow(): void {
+  bigState.value.index!++
+  if (bigState.value.index! >= pattern.value.rows.length) {
+    bigState.value.index = pattern.value.rows.length - 1
+    pattern_complete.value = true
+  }
+}
+
+function prevRow(): void {
+  bigState.value.index!--
+  // Reached start of pattern
+  if (bigState.value.index! < 0) {
+    bigState.value.index = 0
+  }
 }
 
 function nextSubStep() {
@@ -198,28 +210,6 @@ function checkIt(event: KeyboardEvent) {
     prevSubStep()
     return
   }
-  if (event.key == '-' && event.target != input_elem) {
-    decrementRound()
-    return
-  }
-  if (event.key == 'p' && event.target != input_elem) {
-    incrementRound()
-    return
-  }
-  //console.log(event)
-}
-
-function decrementRound() {
-  if (bigState.value.round! <= 1) {
-    return
-  }
-  bigState.value.round!--
-  saveState()
-}
-
-function incrementRound() {
-  bigState.value.round!++
-  saveState()
 }
 
 window.addEventListener('keyup', checkIt)
@@ -238,11 +228,16 @@ window.onload = loadState
   />
   <button id="submitButton" class="bigButton" @click="splitText">Submit</button>
   <br />
-  <CurrentRow :row="pattern ? pattern.rows[bigState.index!] : { items: [] }" />
+  <CurrentRow
+    v-if="!pattern_complete"
+    :row="pattern ? pattern.rows[bigState.index!] : { items: [] }"
+    :row_num="bigState.index! + 1"
+    :next-row="nextRow"
+    :prev-row="prevRow"
+  />
+  <span v-if="pattern_complete">Pattern complete!</span>
   <br /><br />
-  <button class="bigButton" @click="decrementRound">-Round</button>
-  <span>Round Number: {{ bigState.round }}</span>
-  <button class="bigButton" @click="incrementRound">+Round</button>
+  <span>Round Number: {{ bigState.index! + 1 }}</span>
 </template>
 
 <style>
