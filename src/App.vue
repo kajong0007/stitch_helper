@@ -158,7 +158,7 @@ function highlightThing(prev_idx: number, next_idx: number) {
 }
 
 function splitText() {
-  const maybe_parsed = runParser("r: " + bigState.value.next_steps)
+  const maybe_parsed = runParser('r: ' + bigState.value.next_steps)
   if (!maybe_parsed) return
   const parsed: Pattern = maybe_parsed
   if (parsed.rows.length === 0) return

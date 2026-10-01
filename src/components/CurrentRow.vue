@@ -45,6 +45,11 @@ function prevItem(): void {
     }
   }
 }
+
+function resetCount(): void {
+  complete_loop_count.value = 0
+  individual_step_count.value = 0
+}
 </script>
 
 <template>
@@ -61,5 +66,7 @@ function prevItem(): void {
   <p>Individual Steps: {{ individual_step_count }}</p>
   <button class="bigButton" @click="prevSubStep">Prev Step</button>
   <button class="bigButton" @click="nextSubStep">Next Step</button>
+  <br />
+  <button class="bigButton" @click="resetCount">Reset</button>
   <br /><br />
 </template>
