@@ -3,6 +3,8 @@ import { ref } from 'vue'
 import CurrentRow from './components/CurrentRow.vue'
 import { parse as gParse } from './grammar'
 
+const pattern = ref()
+
 function isItem(value: any): value is Item {
   if (typeof value !== 'object') return false
   if (!value.count) return false
@@ -10,7 +12,7 @@ function isItem(value: any): value is Item {
   if (!value.items && !value.stitch) return false
   if (value.items) {
     if (!(value.items instanceof Array)) return false
-    for (var i = 0; i < value.items.length; i++) {
+    for (let i = 0; i < value.items.length; i++) {
       const x = value.items[i]
       if (!isItem(x)) {
         return false
@@ -29,7 +31,7 @@ function isRow(value: any): value is Row {
   if (value.total_stitches && typeof value.total_stitches !== 'number') return false
   if (!value.items) return false
   if (!(value.items instanceof Array)) return false
-  for (var i = 0; i < value.items.length; i++) {
+  for (let i = 0; i < value.items.length; i++) {
     const x = value.items[i]
     if (!isItem(x)) {
       return false
@@ -43,7 +45,7 @@ function isPattern(value: any): value is Pattern {
   if (!value.rows) return false
   if (value.title && typeof value.title !== 'string') return false
   if (!(value.rows instanceof Array)) return false
-  for (var i = 0; i < value.rows.length; i++) {
+  for (let i = 0; i < value.rows.length; i++) {
     if (!isRow(value.rows[i])) {
       return false
     }
@@ -61,26 +63,6 @@ interface BigState {
 }
 
 const bigState = ref<BigState>({})
-
-const item1 = {
-  stitch: 'sc',
-  count: 2,
-}
-const subitem2_1 = {
-  stitch: 'sc',
-  count: 1,
-}
-const subitem2_2 = {
-  stitch: 'dec',
-  count: 1,
-}
-const item2 = {
-  items: [subitem2_1, subitem2_2],
-  count: 4,
-}
-const row = ref<Row>({
-  items: [item1, item2],
-})
 
 function saveState() {
   const parsed = JSON.stringify(bigState.value)
@@ -158,15 +140,15 @@ function highlightThing(prev_idx: number, next_idx: number) {
 }
 
 function splitText() {
-  const maybe_parsed = runParser('r: ' + bigState.value.next_steps)
+  const maybe_parsed = runParser(bigState.value.next_steps + '')
   if (!maybe_parsed) return
   const parsed: Pattern = maybe_parsed
   if (parsed.rows.length === 0) return
+  pattern.value = parsed
   bigState.value.index = 0
   bigState.value.individual_steps = 0
   bigState.value.steps = []
   bigState.value.complete_loops = 0
-  row.value = parsed.rows[0] as Row
   const strs = bigState.value.next_steps!.trim().split(/[ ]+/)
   for (let i = 0; i < strs.length; i++) {
     bigState.value.steps.push({ text: strs[i]!, class: 'nothin' })
@@ -245,23 +227,18 @@ window.onload = loadState
 </script>
 
 <template>
-  <input
+  <textarea
     id="topInput"
+    rows="6"
+    cols="50"
     @keyup.enter="splitText"
     :value="bigState.next_steps"
     @input="onInput"
-    placeholder="Current Round Here"
+    placeholder="Pattern Here"
   />
-  <button class="bigButton" @click="splitText">Set Steps</button>
+  <button id="submitButton" class="bigButton" @click="splitText">Submit</button>
   <br />
-  <CurrentRow :row="row" />
-  <!-- <span v-for="step in bigState.steps" :key="step.text" :class="step.class">
-    {{ step.text + ' ' }}
-  </span>
-  <p>Complete Loops: {{ bigState.complete_loops }}</p>
-  <p>Individual Steps: {{ bigState.individual_steps }}</p>
-  <button class="bigButton" @click="prevSubStep">Prev Step</button>
-  <button class="bigButton" @click="nextSubStep">Next Step</button> -->
+  <CurrentRow :row="pattern ? pattern.rows[bigState.index!] : { items: [] }" />
   <br /><br />
   <button class="bigButton" @click="decrementRound">-Round</button>
   <span>Round Number: {{ bigState.round }}</span>
@@ -271,6 +248,9 @@ window.onload = loadState
 <style>
 body {
   background-color: #333333;
+}
+#submitButton {
+  margin-left: 10px;
 }
 .bigButton {
   font-size: 20pt;
@@ -288,7 +268,7 @@ body {
   color: red;
 }
 #topInput {
-  line-height: 24pt;
+  line-height: 16pt;
   vertical-align: bottom;
 }
 span {
