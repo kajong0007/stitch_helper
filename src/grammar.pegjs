@@ -1,10 +1,11 @@
 Pattern
-= title:Title? 
+= (MaybeWhitespace? EOL)*
+  title:Title?
   (MaybeWhitespace? EOL)*
   rows:RowOrComment|.., (MaybeWhitespace? EOL)*| {
   return {
     "title": title,
-    "rounds": rows,
+    "rows": rows,
   }
 }
 
@@ -49,7 +50,7 @@ Items
 Token
 = token:[a-zA-Z]+ multi:Multiplier? {
   let ret = {
-    "token": token.join(""),
+    "stitch": token.join(""),
     "count": 1,
   }
   if (multi) {
@@ -78,7 +79,6 @@ SubItem
   }
   return ret
 }
-
 MaybeWhitespace
 = HorizontalWhitespace*
 
