@@ -1,6 +1,55 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import CurrentRow from './components/CurrentRow.vue'
+import { parse as gParse } from './grammar'
+
+function isItem(value: any): value is Item {
+  if (typeof value !== 'object') return false
+  if (!value.count) return false
+  if (typeof value.count !== 'number') return false
+  if (!value.items && !value.stitch) return false
+  if (value.items) {
+    if (!(value.items instanceof Array)) return false
+    for (var i = 0; i < value.items.length; i++) {
+      const x = value.items[i]
+      if (!isItem(x)) {
+        return false
+      }
+    }
+  } else if (value.stitch) {
+    if (typeof value.stitch !== 'string') return false
+  } else {
+    return false
+  }
+  return true
+}
+
+function isRow(value: any): value is Row {
+  if (typeof value !== 'object') return false
+  if (value.total_stitches && typeof value.total_stitches !== 'number') return false
+  if (!value.items) return false
+  if (!(value.items instanceof Array)) return false
+  for (var i = 0; i < value.items.length; i++) {
+    const x = value.items[i]
+    if (!isItem(x)) {
+      return false
+    }
+  }
+  return true
+}
+
+function isPattern(value: any): value is Pattern {
+  if (typeof value !== 'object') return false
+  if (!value.rows) return false
+  if (value.title && typeof value.title !== 'string') return false
+  if (!(value.rows instanceof Array)) return false
+  for (var i = 0; i < value.rows.length; i++) {
+    if (!isRow(value.rows[i])) {
+      return false
+    }
+  }
+  return true
+}
 
 interface BigState {
   next_steps?: string
@@ -29,13 +78,23 @@ const item2 = {
   items: [subitem2_1, subitem2_2],
   count: 4,
 }
-const row = {
+const row = ref<Row>({
   items: [item1, item2],
-}
+})
 
 function saveState() {
   const parsed = JSON.stringify(bigState.value)
   localStorage.setItem('stitchState', parsed)
+}
+
+function runParser(s: string): void | Pattern {
+  const maybe_parsed = gParse(s)
+  if (isPattern(maybe_parsed)) {
+    const p: Pattern = maybe_parsed
+    return p
+  } else {
+    console.log(maybe_parsed)
+  }
 }
 
 function stateDefaults() {
@@ -99,10 +158,15 @@ function highlightThing(prev_idx: number, next_idx: number) {
 }
 
 function splitText() {
+  const maybe_parsed = runParser('r: ' + bigState.value.next_steps)
+  if (!maybe_parsed) return
+  const parsed: Pattern = maybe_parsed
+  if (parsed.rows.length === 0) return
   bigState.value.index = 0
   bigState.value.individual_steps = 0
   bigState.value.steps = []
   bigState.value.complete_loops = 0
+  row.value = parsed.rows[0] as Row
   const strs = bigState.value.next_steps!.trim().split(/[ ]+/)
   for (let i = 0; i < strs.length; i++) {
     bigState.value.steps.push({ text: strs[i]!, class: 'nothin' })
@@ -226,5 +290,8 @@ body {
 #topInput {
   line-height: 24pt;
   vertical-align: bottom;
+}
+span {
+  padding-right: 0.25em;
 }
 </style>
