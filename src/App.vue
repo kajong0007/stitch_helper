@@ -7,6 +7,7 @@ const pattern = ref()
 const pattern_complete = ref(false)
 const init_end_of_row = ref(false)
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function isItem(value: any): value is Item {
   if (typeof value !== 'object') return false
   if (!value.count) return false
@@ -28,6 +29,7 @@ function isItem(value: any): value is Item {
   return true
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function isRow(value: any): value is Row {
   if (typeof value !== 'object') return false
   if (value.total_stitches && typeof value.total_stitches !== 'number') return false
@@ -42,6 +44,7 @@ function isRow(value: any): value is Row {
   return true
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function isPattern(value: any): value is Pattern {
   if (typeof value !== 'object') return false
   if (!value.rows) return false

@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import numberOfStitches from '../utils/stitch_utils'
 import { ref, useTemplateRef } from 'vue'
 
 const { item, nextItem, prevItem, is_cur_item, init_end_of_row } = defineProps<{
   item: Item
   nextItem: () => void
-  prevItem: () => void
+  prevItem: () => number
   is_cur_item: boolean
   init_end_of_row: boolean
 }>()
@@ -20,18 +21,17 @@ function nextSubitem(): void {
   if (cur_index.value === item.items?.length) {
     count.value++
     cur_index.value = 0
+    for (const item of subitems.value!) {
+      item!.reset()
+    }
     // Completed all loops of this item
     if (count.value === item.count) {
       nextItem()
-      return
-    }
-    for (const item of subitems.value!) {
-      item!.reset()
     }
   }
 }
 
-function prevSubitem(): void {
+function prevSubitem(): number {
   cur_index.value--
   // Backing up past the beginning of this loop
   if (cur_index.value < 0) {
@@ -40,8 +40,7 @@ function prevSubitem(): void {
     // If this was the first loop, move to prev item
     if (count.value < 0) {
       count.value = 0
-      prevItem()
-      return
+      return prevItem()
     }
     // If this was not the first loop, move to end of prev loop
     cur_index.value = item.items!.length - 1
@@ -49,30 +48,32 @@ function prevSubitem(): void {
       item!.resetToMax()
     }
   }
-  subitems.value![cur_index.value]!.prevStitch()
+  return subitems.value![cur_index.value]!.prevStitch()
 }
 
-function nextStitch(): void {
+// Returns the number of stitches advanced
+function nextStitch(): number {
   if (item.stitch) {
     count.value++
     if (count.value === item.count) {
       nextItem()
     }
-    return
+    return numberOfStitches(item.stitch)
   }
-  subitems.value![cur_index.value]!.nextStitch()
+  return subitems.value![cur_index.value]!.nextStitch()
 }
 
-function prevStitch(): void {
+// Returns the number of stitches undone
+function prevStitch(): number {
   if (item.stitch) {
     count.value--
     if (count.value < 0) {
       count.value = 0
-      prevItem()
+      return prevItem()
     }
-    return
+    return numberOfStitches(item.stitch)
   }
-  subitems.value![cur_index.value]!.prevStitch()
+  return subitems.value![cur_index.value]!.prevStitch()
 }
 
 function reset(): void {
