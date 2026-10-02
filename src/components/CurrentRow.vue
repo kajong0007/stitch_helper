@@ -7,7 +7,7 @@ const { row, row_num, nextRow, prevRow, init_end_of_row } = defineProps<{
   init_end_of_row: boolean
 }>()
 
-import { ref, useTemplateRef } from 'vue'
+import { onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
 import ItemDisplay from './ItemDisplay.vue'
 
 // TODO: Once we have validation, we can make total_stitches required on Row
@@ -17,6 +17,27 @@ const individual_step_count = ref(
 )
 const cur_index = ref(init_end_of_row ? row.items.length - 1 : 0)
 const item_displays = useTemplateRef('itemDisplays')
+
+// Bind space to nextStitch and backspace to prevStitch
+onMounted(() => {
+  window.addEventListener('keyup', keyBehavior)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keyup', keyBehavior)
+})
+
+function keyBehavior(event: KeyboardEvent): void {
+  const input_elem = document.getElementById('topInput')
+  if (event.key == ' ' && event.target != input_elem) {
+    nextStitch()
+    return
+  }
+  if (event.key == 'Backspace' && event.target != input_elem) {
+    prevStitch()
+    return
+  }
+}
 
 function nextStitch(): void {
   // TODO: support inc

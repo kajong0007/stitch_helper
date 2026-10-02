@@ -127,15 +127,6 @@ function onInput(e: Event) {
   bigState.value.next_steps = (e.target as HTMLInputElement).value
 }
 
-function highlightThing(prev_idx: number, next_idx: number) {
-  if (!bigState.value.steps || !bigState.value.steps[prev_idx] || !bigState.value.steps[next_idx]) {
-    return
-  }
-  bigState.value.steps[prev_idx].class = 'nothin'
-  bigState.value.steps[next_idx].class = 'currentIndex'
-  saveState()
-}
-
 function splitText() {
   const maybe_parsed = runParser(bigState.value.next_steps + '')
   if (!maybe_parsed) return
@@ -151,7 +142,6 @@ function splitText() {
   for (let i = 0; i < strs.length; i++) {
     bigState.value.steps.push({ text: strs[i]!, class: 'nothin' })
   }
-  highlightThing(0, 0)
   bigState.value.next_steps = ''
   saveState()
 }
@@ -176,49 +166,6 @@ function prevRow(): void {
   init_end_of_row.value = true
 }
 
-function nextSubStep() {
-  const prev_idx = bigState.value.index
-  bigState.value.index!++
-  bigState.value.individual_steps!++
-  if (bigState.value.index! >= bigState.value.steps!.length) {
-    bigState.value.index = 0
-    bigState.value.complete_loops!++
-  }
-  const next_idx = bigState.value.index
-  highlightThing(prev_idx!, next_idx!)
-}
-
-function prevSubStep() {
-  const prev_idx = bigState.value.index
-  bigState.value.index!--
-  bigState.value.individual_steps!--
-  if (bigState.value.individual_steps! <= 0) {
-    bigState.value.index = 0
-    bigState.value.individual_steps = 0
-    highlightThing(prev_idx!, 0)
-    return
-  }
-  if (bigState.value.index! < 0) {
-    bigState.value.index = bigState.value.steps!.length - 1
-    bigState.value.complete_loops!--
-  }
-  const next_idx = bigState.value.index
-  highlightThing(prev_idx!, next_idx!)
-}
-
-function checkIt(event: KeyboardEvent) {
-  const input_elem = document.getElementById('topInput')
-  if (event.key == ' ' && event.target != input_elem) {
-    nextSubStep()
-    return
-  }
-  if (event.key == 'Backspace' && event.target != input_elem) {
-    prevSubStep()
-    return
-  }
-}
-
-window.addEventListener('keyup', checkIt)
 window.onload = loadState
 </script>
 
@@ -273,8 +220,5 @@ body {
 #topInput {
   line-height: 16pt;
   vertical-align: bottom;
-}
-span {
-  padding-right: 0.25em;
 }
 </style>
