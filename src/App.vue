@@ -63,7 +63,6 @@ function isPattern(value: any): value is Pattern {
 interface BigState {
   individual_steps?: number
   index?: number
-  steps?: { text: string; class?: string }[]
 }
 
 const bigState = ref<BigState>({})
@@ -87,12 +86,6 @@ function stateDefaults() {
   return {
     individual_steps: 0,
     index: 0,
-    steps: [
-      { text: 'Steps', class: 'currentIndex' },
-      { text: 'show' },
-      { text: 'up' },
-      { text: 'here' },
-    ],
   }
 }
 
@@ -106,9 +99,6 @@ function loadState() {
       }
       if (stored.index) {
         bigState.value.index = stored.index
-      }
-      if (stored.steps) {
-        bigState.value.steps = stored.steps
       }
     } catch (e: unknown) {
       console.log(e)
@@ -126,12 +116,7 @@ function splitText() {
   pattern.value = parsed
   bigState.value.index = 0
   bigState.value.individual_steps = 0
-  bigState.value.steps = []
   pattern_complete.value = false
-  const strs = inputted_steps.value.trim().split(/[ ]+/)
-  for (let i = 0; i < strs.length; i++) {
-    bigState.value.steps.push({ text: strs[i]!, class: 'nothin' })
-  }
   inputted_steps.value = ''
   saveState()
 }
@@ -165,7 +150,6 @@ window.onload = loadState
     rows="6"
     cols="50"
     @keyup.enter="splitText"
-    @input="onInput"
     v-model="inputted_steps"
     placeholder="Pattern Here"
   />
