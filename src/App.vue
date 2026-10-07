@@ -74,14 +74,28 @@ function runParser(s: string): void | Pattern {
 }
 
 function loadState() {
-  if (localStorage.getItem('stitchState')) {
+  const stitch_pattern = localStorage.getItem('stitch_pattern')
+  if (stitch_pattern) {
     try {
-      splitText(localStorage.getItem('stitch_pattern') || '')
+      splitText(stitch_pattern)
     } catch (e: unknown) {
       console.log(e)
       localStorage.removeItem('stitch_pattern')
     }
   }
+  const stitch_row_index = localStorage.getItem('stitch_row_index')
+  if (stitch_row_index) {
+    row_index.value = parseInt(stitch_row_index)
+  }
+}
+
+function setPattern() {
+  splitText(inputted_steps.value)
+  pattern_complete.value = false
+  row_index.value = 0
+  localStorage.setItem('stitch_pattern', inputted_steps.value)
+  localStorage.setItem('stitch_row_index', row_index.value + '')
+  inputted_steps.value = ''
 }
 
 function splitText(text: string) {
@@ -90,11 +104,6 @@ function splitText(text: string) {
   const parsed: Pattern = maybe_parsed
   if (parsed.rows.length === 0) return
   pattern.value = parsed
-  row_index.value = 0
-  pattern_complete.value = false
-  localStorage.setItem('stitch_pattern', text)
-  localStorage.setItem('stitch_row_index', row_index.value + '')
-  inputted_steps.value = ''
 }
 
 function nextRow(): void {
@@ -124,7 +133,7 @@ window.onload = loadState
 
 <template>
   <textarea id="topInput" rows="6" cols="50" v-model="inputted_steps" placeholder="Pattern Here" />
-  <button id="submitButton" class="bigButton" @click="splitText(inputted_steps)">Submit</button>
+  <button id="submitButton" class="bigButton" @click="setPattern">Submit</button>
   <br />
   <CurrentRow
     v-if="!pattern_complete"
