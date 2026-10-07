@@ -55,6 +55,7 @@ function getStitch(item: Item) {
 function nextStitch(): void {
   const stiches_done = item_displays.value![cur_index.value]!.nextStitch()
   individual_step_count.value += stiches_done
+  localStorage.setItem('stitch_count', individual_step_count.value + '')
 }
 
 function prevStitch(): void {
@@ -63,6 +64,7 @@ function prevStitch(): void {
   if (individual_step_count.value < 0) {
     individual_step_count.value = 0
   }
+  localStorage.setItem('stitch_count', individual_step_count.value + '')
 }
 
 function nextItem(): void {

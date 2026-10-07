@@ -79,7 +79,7 @@ function loadState() {
       splitText(localStorage.getItem('stitch_pattern') || '')
     } catch (e: unknown) {
       console.log(e)
-      localStorage.removeItem('stitchState')
+      localStorage.removeItem('stitch_pattern')
     }
   }
 }
@@ -93,6 +93,7 @@ function splitText(text: string) {
   row_index.value = 0
   pattern_complete.value = false
   localStorage.setItem('stitch_pattern', text)
+  localStorage.setItem('stitch_row_index', row_index.value + '')
   inputted_steps.value = ''
 }
 
@@ -103,6 +104,7 @@ function nextRow(): void {
     row_index.value = pattern.value.rows.length - 1
     pattern_complete.value = true
   }
+  localStorage.setItem('stitch_row_index', row_index.value + '')
 }
 
 function prevRow(): void {
@@ -114,6 +116,7 @@ function prevRow(): void {
   }
   // Move to the end of the prev row
   init_end_of_row.value = true
+  localStorage.setItem('stitch_row_index', row_index.value + '')
 }
 
 window.onload = loadState
