@@ -3,6 +3,8 @@ import { ref } from 'vue'
 import CurrentRow from './components/CurrentRow.vue'
 import { parse as gParse } from './grammar'
 
+const inputted_steps = ref('')
+
 const pattern = ref()
 const pattern_complete = ref(false)
 const init_end_of_row = ref(false)
@@ -59,7 +61,6 @@ function isPattern(value: any): value is Pattern {
 }
 
 interface BigState {
-  next_steps?: string
   individual_steps?: number
   index?: number
   steps?: { text: string; class?: string }[]
@@ -84,9 +85,7 @@ function runParser(s: string): void | Pattern {
 
 function stateDefaults() {
   return {
-    next_steps: '',
     individual_steps: 0,
-    complete_loops: 0,
     index: 0,
     steps: [
       { text: 'Steps', class: 'currentIndex' },
@@ -102,9 +101,6 @@ function loadState() {
   if (localStorage.getItem('stitchState')) {
     try {
       const stored = JSON.parse(localStorage.getItem('stitchState')!)
-      if (stored.next_steps) {
-        bigState.value.next_steps = stored.next_steps
-      }
       if (stored.individual_steps) {
         bigState.value.individual_steps = stored.individual_steps
       }
@@ -122,12 +118,8 @@ function loadState() {
   saveState()
 }
 
-function onInput(e: Event) {
-  bigState.value.next_steps = (e.target as HTMLInputElement).value
-}
-
 function splitText() {
-  const maybe_parsed = runParser(bigState.value.next_steps + '')
+  const maybe_parsed = runParser(inputted_steps.value + '')
   if (!maybe_parsed) return
   const parsed: Pattern = maybe_parsed
   if (parsed.rows.length === 0) return
@@ -136,11 +128,11 @@ function splitText() {
   bigState.value.individual_steps = 0
   bigState.value.steps = []
   pattern_complete.value = false
-  const strs = bigState.value.next_steps!.trim().split(/[ ]+/)
+  const strs = inputted_steps.value.trim().split(/[ ]+/)
   for (let i = 0; i < strs.length; i++) {
     bigState.value.steps.push({ text: strs[i]!, class: 'nothin' })
   }
-  bigState.value.next_steps = ''
+  inputted_steps.value = ''
   saveState()
 }
 
@@ -173,8 +165,8 @@ window.onload = loadState
     rows="6"
     cols="50"
     @keyup.enter="splitText"
-    :value="bigState.next_steps"
     @input="onInput"
+    v-model="inputted_steps"
     placeholder="Pattern Here"
   />
   <button id="submitButton" class="bigButton" @click="splitText">Submit</button>
