@@ -61,7 +61,6 @@ function isPattern(value: any): value is Pattern {
 interface BigState {
   next_steps?: string
   individual_steps?: number
-  complete_loops?: number
   index?: number
   steps?: { text: string; class?: string }[]
 }
@@ -109,9 +108,6 @@ function loadState() {
       if (stored.individual_steps) {
         bigState.value.individual_steps = stored.individual_steps
       }
-      if (stored.complete_loops) {
-        bigState.value.complete_loops = stored.complete_loops
-      }
       if (stored.index) {
         bigState.value.index = stored.index
       }
@@ -139,7 +135,6 @@ function splitText() {
   bigState.value.index = 0
   bigState.value.individual_steps = 0
   bigState.value.steps = []
-  bigState.value.complete_loops = 0
   pattern_complete.value = false
   const strs = bigState.value.next_steps!.trim().split(/[ ]+/)
   for (let i = 0; i < strs.length; i++) {
