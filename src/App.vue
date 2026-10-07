@@ -3,9 +3,12 @@ import { ref } from 'vue'
 import CurrentRow from './components/CurrentRow.vue'
 import { parse as gParse } from './grammar'
 
+// For inputting new pattern
 const inputted_steps = ref('')
 
+// For processing current pattern
 const pattern = ref()
+const row_index = ref(0)
 const pattern_complete = ref(false)
 const init_end_of_row = ref(false)
 
@@ -60,18 +63,6 @@ function isPattern(value: any): value is Pattern {
   return true
 }
 
-interface BigState {
-  individual_steps?: number
-  index?: number
-}
-
-const bigState = ref<BigState>({})
-
-function saveState() {
-  const parsed = JSON.stringify(bigState.value)
-  localStorage.setItem('stitchState', parsed)
-}
-
 function runParser(s: string): void | Pattern {
   const maybe_parsed = gParse(s)
   if (isPattern(maybe_parsed)) {
@@ -82,59 +73,43 @@ function runParser(s: string): void | Pattern {
   }
 }
 
-function stateDefaults() {
-  return {
-    individual_steps: 0,
-    index: 0,
-  }
-}
-
 function loadState() {
-  bigState.value = stateDefaults()
   if (localStorage.getItem('stitchState')) {
     try {
-      const stored = JSON.parse(localStorage.getItem('stitchState')!)
-      if (stored.individual_steps) {
-        bigState.value.individual_steps = stored.individual_steps
-      }
-      if (stored.index) {
-        bigState.value.index = stored.index
-      }
+      splitText(localStorage.getItem('stitch_pattern') || '')
     } catch (e: unknown) {
       console.log(e)
       localStorage.removeItem('stitchState')
     }
   }
-  saveState()
 }
 
-function splitText() {
-  const maybe_parsed = runParser(inputted_steps.value + '')
+function splitText(text: string) {
+  const maybe_parsed = runParser(text + '')
   if (!maybe_parsed) return
   const parsed: Pattern = maybe_parsed
   if (parsed.rows.length === 0) return
   pattern.value = parsed
-  bigState.value.index = 0
-  bigState.value.individual_steps = 0
+  row_index.value = 0
   pattern_complete.value = false
+  localStorage.setItem('stitch_pattern', text)
   inputted_steps.value = ''
-  saveState()
 }
 
 function nextRow(): void {
-  bigState.value.index!++
+  row_index.value++
   init_end_of_row.value = false
-  if (bigState.value.index! >= pattern.value.rows.length) {
-    bigState.value.index = pattern.value.rows.length - 1
+  if (row_index.value >= pattern.value.rows.length) {
+    row_index.value = pattern.value.rows.length - 1
     pattern_complete.value = true
   }
 }
 
 function prevRow(): void {
-  bigState.value.index!--
+  row_index.value--
   // Reached start of pattern
-  if (bigState.value.index! < 0) {
-    bigState.value.index = 0
+  if (row_index.value < 0) {
+    row_index.value = 0
     return
   }
   // Move to the end of the prev row
@@ -145,28 +120,21 @@ window.onload = loadState
 </script>
 
 <template>
-  <textarea
-    id="topInput"
-    rows="6"
-    cols="50"
-    @keyup.enter="splitText"
-    v-model="inputted_steps"
-    placeholder="Pattern Here"
-  />
-  <button id="submitButton" class="bigButton" @click="splitText">Submit</button>
+  <textarea id="topInput" rows="6" cols="50" v-model="inputted_steps" placeholder="Pattern Here" />
+  <button id="submitButton" class="bigButton" @click="splitText(inputted_steps)">Submit</button>
   <br />
   <CurrentRow
     v-if="!pattern_complete"
-    :key="bigState.index"
-    :row="pattern ? pattern.rows[bigState.index!] : { items: [] }"
-    :row_num="bigState.index! + 1"
+    :key="row_index"
+    :row="pattern ? pattern.rows[row_index] : { items: [] }"
+    :row_num="row_index + 1"
     :next-row="nextRow"
     :prev-row="prevRow"
     :init_end_of_row="init_end_of_row"
   />
   <span v-if="pattern_complete">Pattern complete!</span>
   <br /><br />
-  <span>Round Number: {{ bigState.index! + 1 }}</span>
+  <span>Round Number: {{ row_index + 1 }}</span>
 </template>
 
 <style>
