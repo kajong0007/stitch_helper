@@ -6,6 +6,7 @@ import numberOfStitches from './utils/stitch_utils.ts'
 
 // For inputting new pattern
 const inputted_steps = ref('')
+const error_message = ref('')
 
 // For processing current pattern
 const pattern = ref()
@@ -78,7 +79,7 @@ function loadState() {
   const stitch_pattern = localStorage.getItem('stitch_pattern')
   if (stitch_pattern) {
     try {
-      splitText(stitch_pattern)
+      pattern.value = splitText(stitch_pattern)
     } catch (e: unknown) {
       console.log(e)
       localStorage.removeItem('stitch_pattern')
@@ -91,27 +92,31 @@ function loadState() {
 }
 
 function setPattern() {
-  splitText(inputted_steps.value)
-  pattern_complete.value = false
-  row_index.value = 0
-  localStorage.setItem('stitch_pattern', inputted_steps.value)
-  localStorage.setItem('stitch_row_index', row_index.value + '')
-  inputted_steps.value = ''
+  const new_pattern = splitText(inputted_steps.value)
+  if (new_pattern) {
+    pattern.value = new_pattern
+    pattern_complete.value = false
+    row_index.value = 0
+    localStorage.setItem('stitch_pattern', inputted_steps.value)
+    localStorage.setItem('stitch_row_index', row_index.value + '')
+    inputted_steps.value = ''
+  }
 }
 
-function splitText(text: string) {
+function splitText(text: string): Pattern | null {
   const maybe_parsed = runParser(text + '')
-  if (!maybe_parsed) return
+  if (!maybe_parsed) return null
   const parsed: Pattern = maybe_parsed
-  if (parsed.rows.length === 0) return
+  if (parsed.rows.length === 0) return null
   for (let i = 0; i < parsed.rows.length; i++) {
     const row = parsed.rows[i]!
     if (!validateRowCount(row)) {
-      console.log('Invalid row count on row ' + (i + 1))
-      return
+      error_message.value = 'Invalid row count on row ' + (i + 1)
+      return null
     }
   }
-  pattern.value = parsed
+  error_message.value = ''
+  return parsed
 }
 
 function validateRowCount(row: Row): boolean {
@@ -164,8 +169,10 @@ window.onload = loadState
   <textarea id="topInput" rows="6" cols="50" v-model="inputted_steps" placeholder="Pattern Here" />
   <button id="submitButton" class="bigButton" @click="setPattern">Submit</button>
   <br />
+  <span v-if="error_message" class="highlighted">{{ error_message }}</span>
+  <br v-if="error_message" />
   <CurrentRow
-    v-if="!pattern_complete"
+    v-if="!pattern_complete && pattern"
     :key="row_index"
     :row="pattern ? pattern.rows[row_index] : { items: [] }"
     :row_num="row_index + 1"
