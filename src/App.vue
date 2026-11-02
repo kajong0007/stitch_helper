@@ -115,10 +115,12 @@ function splitText(text: string) {
 }
 
 function validateRowCount(row: Row): boolean {
+  const expected = calculateStitchCount(row.items)
   if (!row.total_stitches) {
+    row.total_stitches = expected
     return true
   }
-  return calculateStitchCount(row.items) === row.total_stitches
+  return expected === row.total_stitches
 }
 
 function calculateStitchCount(items: Item[]): number {
