@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import CurrentRow from './components/CurrentRow.vue'
 import { parse as gParse } from './grammar'
+import numberOfStitches from './utils/stitch_utils.ts'
 
 // For inputting new pattern
 const inputted_steps = ref('')
@@ -103,7 +104,33 @@ function splitText(text: string) {
   if (!maybe_parsed) return
   const parsed: Pattern = maybe_parsed
   if (parsed.rows.length === 0) return
+  for (let i = 0; i < parsed.rows.length; i++) {
+    const row = parsed.rows[i]!
+    if (!validateRowCount(row)) {
+      console.log('Invalid row count on row ' + (i + 1))
+      return
+    }
+  }
   pattern.value = parsed
+}
+
+function validateRowCount(row: Row): boolean {
+  if (!row.total_stitches) {
+    return true
+  }
+  return calculateStitchCount(row.items) === row.total_stitches
+}
+
+function calculateStitchCount(items: Item[]): number {
+  let count = 0
+  for (const item of items) {
+    if (item.stitch) {
+      count += item.count * numberOfStitches(item.stitch)
+    } else {
+      count += item.count * calculateStitchCount(item.items!)
+    }
+  }
+  return count
 }
 
 function nextRow(): void {
