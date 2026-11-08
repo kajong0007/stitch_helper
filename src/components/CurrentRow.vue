@@ -1,11 +1,14 @@
 <script setup lang="ts">
-const { row, row_num, nextRow, prevRow, init_end_of_row } = defineProps<{
-  row: Row
-  row_num: number
-  nextRow: () => void
-  prevRow: () => void
-  init_end_of_row: boolean
-}>()
+const { row, row_num, nextRow, prevRow, init_end_of_row, item_index, init_step_count } =
+  defineProps<{
+    row: Row
+    row_num: number
+    nextRow: () => void
+    prevRow: () => void
+    init_end_of_row: boolean
+    item_index?: ItemIndex
+    init_step_count?: number
+  }>()
 
 import { onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
 import ItemDisplay from './ItemDisplay.vue'
@@ -14,9 +17,17 @@ import numberOfStitches from '../utils/stitch_utils.ts'
 // TODO: Once we have validation, we can make total_stitches required on Row
 // (if the user doesn't enter it, we will just use the calculated value)
 const individual_step_count = ref(
-  init_end_of_row ? (row.total_stitches ? row.total_stitches - numStitchesOfLastStitch() : 0) : 0,
+  init_end_of_row
+    ? row.total_stitches
+      ? row.total_stitches - numStitchesOfLastStitch()
+      : 0
+    : init_step_count
+      ? init_step_count
+      : 0,
 )
-const cur_index = ref(init_end_of_row ? row.items.length - 1 : 0)
+const cur_index = ref(
+  init_end_of_row ? row.items.length - 1 : item_index && item_index.index ? item_index.index : 0,
+)
 const item_displays = useTemplateRef('itemDisplays')
 
 // Bind space to nextStitch and backspace to prevStitch
@@ -103,6 +114,11 @@ function resetCount(): void {
     :prev-item="prevItem"
     :is_cur_item="cur_index === index"
     :init_end_of_row="init_end_of_row"
+    :item_index="
+      cur_index === index && item_index && item_index.subitem_index
+        ? item_index.subitem_index
+        : null
+    "
   />
   <p>Individual Steps: {{ individual_step_count }}</p>
   <button class="bigButton" @click="prevStitch">Prev Step</button>

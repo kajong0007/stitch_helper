@@ -2,17 +2,22 @@
 import numberOfStitches from '../utils/stitch_utils'
 import { ref, useTemplateRef } from 'vue'
 
-const { item, nextItem, prevItem, is_cur_item, init_end_of_row } = defineProps<{
+const { item, nextItem, prevItem, is_cur_item, init_end_of_row, item_index } = defineProps<{
   item: Item
   nextItem: () => void
   prevItem: () => number
   is_cur_item: boolean
   init_end_of_row: boolean
+  item_index: ItemIndex | null
 }>()
 
 // If we are initializing for end of row, the last item needs to have 1 stitch left, all other items should appear complete
-const count = ref(init_end_of_row ? (is_cur_item ? item.count - 1 : item.count) : 0)
-const cur_index = ref(0)
+// If item_index is set, the count is in that
+const count = ref(
+  init_end_of_row ? (is_cur_item ? item.count - 1 : item.count) : item_index ? item_index.count : 0,
+)
+// If this item is an item list and item_index is set, the index in that is the cur_index
+const cur_index = ref(item.items && item_index && item_index.index ? item_index.index : 0)
 const subitems = useTemplateRef('subitems')
 
 function nextSubitem(): void {
@@ -109,6 +114,11 @@ function getCountDisplay(): string {
       :prev-item="prevSubitem"
       :is_cur_item="is_cur_item && index === cur_index"
       :init_end_of_row="init_end_of_row"
+      :item_index="
+        is_cur_item && index === cur_index && item_index && item_index.subitem_index
+          ? item_index.subitem_index
+          : null
+      "
     />
     ]{{ getCountDisplay() }}
   </span>

@@ -14,6 +14,10 @@ const row_index = ref(0)
 const pattern_complete = ref(false)
 const init_end_of_row = ref(false)
 
+// For loading current pattern from local storage
+const item_index = ref<ItemIndex>()
+const init_step_count = ref()
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function isItem(value: any): value is Item {
   if (typeof value !== 'object') return false
@@ -89,6 +93,15 @@ function loadState() {
   if (stitch_row_index) {
     row_index.value = parseInt(stitch_row_index)
   }
+  const stitch_count_string = localStorage.getItem('stitch_count')
+  if (stitch_count_string) {
+    const stitch_count = parseInt(stitch_count_string)
+    init_step_count.value = stitch_count
+    const index = getCurrentItemIndex(stitch_count, 0, pattern.value.rows[row_index.value].items)
+    if (typeof index === 'object') {
+      item_index.value = index
+    }
+  }
 }
 
 function setPattern() {
@@ -97,6 +110,8 @@ function setPattern() {
     pattern.value = new_pattern
     pattern_complete.value = false
     row_index.value = 0
+    item_index.value = undefined
+    init_step_count.value = 0
     localStorage.setItem('stitch_pattern', inputted_steps.value)
     localStorage.setItem('stitch_row_index', row_index.value + '')
     inputted_steps.value = ''
@@ -140,6 +155,44 @@ function calculateStitchCount(items: Item[]): number {
   return count
 }
 
+// Returns an ItemIndex if this list of items contains the current position. Otherwise returns a number
+// representing the number of stitches remaining after this item list
+function getCurrentItemIndex(
+  num_stitches: number,
+  count: number,
+  items: Item[],
+): ItemIndex | number {
+  console.log('Remaining stitches: ' + num_stitches + ', items: ' + items)
+  let remaining_stitches = num_stitches
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i]!
+    if (item.stitch) {
+      const stitches_per = numberOfStitches(item.stitch)
+      // We've found the end
+      if (item.count * stitches_per > remaining_stitches) {
+        return {
+          index: i,
+          count: count,
+          subitem_index: { count: remaining_stitches / stitches_per },
+        }
+      }
+      // Move on past this stitch
+      remaining_stitches -= item.count * stitches_per
+    }
+    if (item.items) {
+      for (let j = 0; j < item.count; j++) {
+        const ret_val = getCurrentItemIndex(remaining_stitches, j, item.items)
+        // We found the end already - it's within this item
+        if (typeof ret_val === 'object') {
+          return { index: i, count: j, subitem_index: ret_val }
+        }
+        remaining_stitches = ret_val
+      }
+    }
+  }
+  return remaining_stitches
+}
+
 function nextRow(): void {
   row_index.value++
   init_end_of_row.value = false
@@ -148,6 +201,8 @@ function nextRow(): void {
     pattern_complete.value = true
   }
   localStorage.setItem('stitch_row_index', row_index.value + '')
+  item_index.value = undefined
+  init_step_count.value = undefined
 }
 
 function prevRow(): void {
@@ -160,6 +215,8 @@ function prevRow(): void {
   // Move to the end of the prev row
   init_end_of_row.value = true
   localStorage.setItem('stitch_row_index', row_index.value + '')
+  item_index.value = undefined
+  init_step_count.value = undefined
 }
 
 window.onload = loadState
@@ -179,6 +236,8 @@ window.onload = loadState
     :next-row="nextRow"
     :prev-row="prevRow"
     :init_end_of_row="init_end_of_row"
+    :item_index="item_index"
+    :init_step_count="init_step_count"
   />
   <span v-if="pattern_complete">Pattern complete!</span>
   <br /><br />
