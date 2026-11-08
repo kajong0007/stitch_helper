@@ -7,6 +7,7 @@ import numberOfStitches from './utils/stitch_utils.ts'
 // For inputting new pattern
 const inputted_steps = ref('')
 const error_message = ref('')
+const pattern_num = ref(0)
 
 // For processing current pattern
 const pattern = ref()
@@ -114,7 +115,9 @@ function setPattern() {
     init_step_count.value = 0
     localStorage.setItem('stitch_pattern', inputted_steps.value)
     localStorage.setItem('stitch_row_index', row_index.value + '')
+    localStorage.setItem('stitch_count', 0 + '')
     inputted_steps.value = ''
+    pattern_num.value++
   }
 }
 
@@ -230,7 +233,7 @@ window.onload = loadState
   <br v-if="error_message" />
   <CurrentRow
     v-if="!pattern_complete && pattern"
-    :key="row_index"
+    :key="pattern_num + '' + row_index"
     :row="pattern ? pattern.rows[row_index] : { items: [] }"
     :row_num="row_index + 1"
     :next-row="nextRow"
