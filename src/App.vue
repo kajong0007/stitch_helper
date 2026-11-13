@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import CurrentRow from './components/CurrentRow.vue'
+import LinkCreator from './components/LinkCreator.vue'
 import { parse as gParse } from './grammar'
 import numberOfStitches from './utils/stitch_utils.ts'
 
@@ -58,12 +59,25 @@ function isRow(value: any): value is Row {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function isPattern(value: any): value is Pattern {
-  if (typeof value !== 'object') return false
-  if (!value.rows) return false
-  if (value.title && typeof value.title !== 'string') return false
-  if (!(value.rows instanceof Array)) return false
+  if (typeof value !== 'object') {
+    console.log('Error: Pattern is not an object')
+    return false
+  }
+  if (!value.rows) {
+    console.log('Error: No rows parsed')
+    return false
+  }
+  if (value.title && typeof value.title !== 'string') {
+    console.log('Error: Title exists and is not a string')
+    return false
+  }
+  if (!(value.rows instanceof Array)) {
+    console.log('Error: Rows is not an array')
+    return false
+  }
   for (let i = 0; i < value.rows.length; i++) {
     if (!isRow(value.rows[i])) {
+      console.log('Error: Row ' + (i + 1) + ' is not valid')
       return false
     }
   }
@@ -81,6 +95,37 @@ function runParser(s: string): void | Pattern {
 }
 
 function loadState() {
+  const url_segments = document.URL.split('?')
+  if (url_segments.length > 1) {
+    const params = new URLSearchParams(url_segments[1])
+    for (const pair of params.entries()) {
+      if (pair[0] === 'pattern') {
+        loadStateFromUrlParam(pair[1])
+        return
+      }
+    }
+  }
+  loadStateFromLocalStorage()
+}
+
+function loadStateFromUrlParam(stitch_pattern: string): void {
+  try {
+    pattern.value = splitText(stitch_pattern)
+    localStorage.setItem('stitch_pattern', stitch_pattern)
+
+    row_index.value = 0
+    localStorage.setItem('stitch_row_index', 0 + '')
+
+    init_step_count.value = 0
+    localStorage.setItem('stitch_count', 0 + '')
+
+    item_index.value = undefined
+  } catch (e: unknown) {
+    console.log(e)
+  }
+}
+
+function loadStateFromLocalStorage() {
   const stitch_pattern = localStorage.getItem('stitch_pattern')
   if (stitch_pattern) {
     try {
@@ -222,6 +267,10 @@ function prevRow(): void {
   init_step_count.value = undefined
 }
 
+function getPatternString(): string {
+  return localStorage.getItem('stitch_pattern') || ''
+}
+
 window.onload = loadState
 </script>
 
@@ -245,6 +294,8 @@ window.onload = loadState
   <span v-if="pattern_complete">Pattern complete!</span>
   <br /><br />
   <span>Round Number: {{ row_index + 1 }}</span>
+  <br /><br />
+  <LinkCreator :pattern_string="getPatternString()" />
 </template>
 
 <style>

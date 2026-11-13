@@ -125,5 +125,4 @@ function resetCount(): void {
   <button class="bigButton" @click="nextStitch">Next Step</button>
   <br />
   <button class="bigButton" @click="resetCount">Reset</button>
-  <br /><br />
 </template>
