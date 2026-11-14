@@ -2,28 +2,32 @@ Pattern
 = (MaybeWhitespace? EOL)*
   title:Title?
   (MaybeWhitespace? EOL)*
-  rows:RowOrComment|.., (MaybeWhitespace? EOL)*| {
-  return {
+  rows:RowOrComment|.., (MaybeWhitespace? EOL)| {
+  let pattern = {
     "title": title,
-    "rows": rows,
+    "rows": [],
   }
+  for (let r in rows) {
+    if (rows[r]) {
+      pattern.rows.push(rows[r]);
+    }
+  }
+  return pattern;
 }
 
 RowOrComment
 = r:Row t:TotalStitches? MaybeWhitespace c:Comment? {
-  let row = {
-    "items": r,
-  }
+  let row = r
   if (t) {
     row.total_stitches = t
   }
   if (c) {
     row.comment = c
   }
+  if (!r.comment && !r.items[0]) {
+    return null
+  }
   return row
-}
-  / c:Comment {
-  return c
 }
 
 Title
@@ -33,9 +37,23 @@ Title
 }
 
 Row
-= ('r:') MaybeWhitespace items:Items {
-  return items
+= n:RowStart? MaybeWhitespace items:Items {
+  let row = {
+    "items": items
+  }
+  if (n && n > 0) {
+    row["rowNum"] = n;
+  }
+  return row
 }
+
+RowStart
+= "r:"{
+    return null;
+  }
+  / "r"? rowNum:[0-9]+ ":" {
+    return parseInt(rowNum.join(""), 10);
+  }
 
 TotalStitches
 = '(' digits:[0-9]+ ')' {
@@ -73,12 +91,30 @@ SubItem
   let ret = {
     "items": items,
     "count": 1,
+    "delimiter": "["
   }
   if (multi) {
     ret["count"] = multi
   }
   return ret
 }
+  / '('
+  MaybeWhitespace 
+  items:Items 
+  MaybeWhitespace 
+  ')'
+  multi:Multiplier? {
+    let ret = {
+    "items": items,
+    "count": 1,
+    "delimiter": "("
+  }
+  if (multi) {
+    ret["count"] = multi
+  }
+  return ret
+}
+
 MaybeWhitespace
 = HorizontalWhitespace*
 
@@ -93,10 +129,10 @@ EOL
 
 Comment
 = one:OnelineComment {
-    return {"onecomment": one}
+    return one
   }
   / multi:MultilineComment {
-  return {"multicomment": multi}
+  return multi
 }
 
 OnelineComment
