@@ -1,190 +1,235 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import CurrentRow from './components/CurrentRow.vue'
+import LinkCreator from './components/LinkCreator.vue'
+import { runParser } from './validate_grammar'
+import numberOfStitches from './utils/stitch_utils.ts'
 
-interface BigState {
-  next_steps?: string
-  individual_steps?: number
-  complete_loops?: number
-  index?: number
-  steps?: { text: string; class?: string }[]
-  round?: number
-}
+// For inputting new pattern
+const inputted_steps = ref('')
+const error_message = ref('')
+const pattern_num = ref(0)
 
-const bigState = ref<BigState>({})
+// For processing current pattern
+const pattern = ref()
+const row_index = ref(0)
+const pattern_complete = ref(false)
+const init_end_of_row = ref(false)
 
-function saveState() {
-  const parsed = JSON.stringify(bigState.value)
-  localStorage.setItem('stitchState', parsed)
-}
-
-function stateDefaults() {
-  return {
-    next_steps: '',
-    individual_steps: 0,
-    complete_loops: 0,
-    index: 0,
-    steps: [
-      { text: 'Steps', class: 'currentIndex' },
-      { text: 'show' },
-      { text: 'up' },
-      { text: 'here' },
-    ],
-    round: 1,
-  }
-}
+// For loading current pattern from local storage
+const item_index = ref<ItemIndex>()
+const init_step_count = ref()
 
 function loadState() {
-  bigState.value = stateDefaults()
-  if (localStorage.getItem('stitchState')) {
-    try {
-      const stored = JSON.parse(localStorage.getItem('stitchState')!)
-      if (stored.next_steps) {
-        bigState.value.next_steps = stored.next_steps
+  const url_segments = document.URL.split('?')
+  if (url_segments.length > 1) {
+    const params = new URLSearchParams(url_segments[1])
+    for (const pair of params.entries()) {
+      if (pair[0] === 'pattern') {
+        loadStateFromUrlParam(pair[1])
+        return
       }
-      if (stored.individual_steps) {
-        bigState.value.individual_steps = stored.individual_steps
-      }
-      if (stored.complete_loops) {
-        bigState.value.complete_loops = stored.complete_loops
-      }
-      if (stored.index) {
-        bigState.value.index = stored.index
-      }
-      if (stored.steps) {
-        bigState.value.steps = stored.steps
-      }
-      if (stored.round) {
-        bigState.value.round = stored.round
-      }
-    } catch (e: unknown) {
-      console.log(e)
-      localStorage.removeItem('stitchState')
     }
   }
-  saveState()
+  loadStateFromLocalStorage()
 }
 
-function onInput(e: Event) {
-  bigState.value.next_steps = (e.target as HTMLInputElement).value
+function loadStateFromUrlParam(stitch_pattern: string): void {
+  try {
+    pattern.value = splitText(stitch_pattern)
+    localStorage.setItem('stitch_pattern', stitch_pattern)
+
+    row_index.value = 0
+    localStorage.setItem('stitch_row_index', 0 + '')
+
+    init_step_count.value = 0
+    localStorage.setItem('stitch_count', 0 + '')
+
+    item_index.value = undefined
+  } catch (e: unknown) {
+    console.log(e)
+  }
 }
 
-function highlightThing(prev_idx: number, next_idx: number) {
-  if (!bigState.value.steps || !bigState.value.steps[prev_idx] || !bigState.value.steps[next_idx]) {
+function loadStateFromLocalStorage() {
+  const stitch_pattern = localStorage.getItem('stitch_pattern')
+  if (stitch_pattern) {
+    try {
+      pattern.value = splitText(stitch_pattern)
+    } catch (e: unknown) {
+      console.log(e)
+      localStorage.removeItem('stitch_pattern')
+    }
+  }
+  const stitch_row_index = localStorage.getItem('stitch_row_index')
+  if (stitch_row_index) {
+    row_index.value = parseInt(stitch_row_index)
+  }
+  const stitch_count_string = localStorage.getItem('stitch_count')
+  if (stitch_count_string) {
+    const stitch_count = parseInt(stitch_count_string)
+    init_step_count.value = stitch_count
+    const index = getCurrentItemIndex(stitch_count, 0, pattern.value.rows[row_index.value].items)
+    if (typeof index === 'object') {
+      item_index.value = index
+    }
+  }
+}
+
+function setPattern() {
+  const new_pattern = splitText(inputted_steps.value)
+  if (new_pattern) {
+    pattern.value = new_pattern
+    pattern_complete.value = false
+    row_index.value = 0
+    item_index.value = undefined
+    init_step_count.value = 0
+    localStorage.setItem('stitch_pattern', inputted_steps.value)
+    localStorage.setItem('stitch_row_index', row_index.value + '')
+    localStorage.setItem('stitch_count', 0 + '')
+    inputted_steps.value = ''
+    pattern_num.value++
+  }
+}
+
+function splitText(text: string): Pattern | null {
+  const maybe_parsed = runParser(text + '')
+  if (!maybe_parsed) return null
+  const parsed: Pattern = maybe_parsed
+  if (parsed.rows.length === 0) return null
+  for (let i = 0; i < parsed.rows.length; i++) {
+    const row = parsed.rows[i]!
+    if (!validateRowCount(row)) {
+      error_message.value = 'Invalid row count on row ' + (i + 1)
+      return null
+    }
+  }
+  error_message.value = ''
+  return parsed
+}
+
+function validateRowCount(row: Row): boolean {
+  const expected = calculateStitchCount(row.items)
+  if (!row.total_stitches) {
+    row.total_stitches = expected
+    return true
+  }
+  return expected === row.total_stitches
+}
+
+function calculateStitchCount(items: Item[]): number {
+  let count = 0
+  for (const item of items) {
+    if (item.stitch) {
+      count += item.count * numberOfStitches(item.stitch)
+    } else {
+      count += item.count * calculateStitchCount(item.items!)
+    }
+  }
+  return count
+}
+
+// Returns an ItemIndex if this list of items contains the current position. Otherwise returns a number
+// representing the number of stitches remaining after this item list
+function getCurrentItemIndex(
+  num_stitches: number,
+  count: number,
+  items: Item[],
+): ItemIndex | number {
+  console.log('Remaining stitches: ' + num_stitches + ', items: ' + items)
+  let remaining_stitches = num_stitches
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i]!
+    if (item.stitch) {
+      const stitches_per = numberOfStitches(item.stitch)
+      // We've found the end
+      if (item.count * stitches_per > remaining_stitches) {
+        return {
+          index: i,
+          count: count,
+          subitem_index: { count: remaining_stitches / stitches_per },
+        }
+      }
+      // Move on past this stitch
+      remaining_stitches -= item.count * stitches_per
+    }
+    if (item.items) {
+      for (let j = 0; j < item.count; j++) {
+        const ret_val = getCurrentItemIndex(remaining_stitches, j, item.items)
+        // We found the end already - it's within this item
+        if (typeof ret_val === 'object') {
+          return { index: i, count: j, subitem_index: ret_val }
+        }
+        remaining_stitches = ret_val
+      }
+    }
+  }
+  return remaining_stitches
+}
+
+function nextRow(): void {
+  row_index.value++
+  init_end_of_row.value = false
+  if (row_index.value >= pattern.value.rows.length) {
+    row_index.value = pattern.value.rows.length - 1
+    pattern_complete.value = true
+  }
+  localStorage.setItem('stitch_row_index', row_index.value + '')
+  item_index.value = undefined
+  init_step_count.value = undefined
+}
+
+function prevRow(): void {
+  row_index.value--
+  // Reached start of pattern
+  if (row_index.value < 0) {
+    row_index.value = 0
     return
   }
-  bigState.value.steps[prev_idx].class = 'nothin'
-  bigState.value.steps[next_idx].class = 'currentIndex'
-  saveState()
+  // Move to the end of the prev row
+  init_end_of_row.value = true
+  localStorage.setItem('stitch_row_index', row_index.value + '')
+  item_index.value = undefined
+  init_step_count.value = undefined
 }
 
-function splitText() {
-  bigState.value.index = 0
-  bigState.value.individual_steps = 0
-  bigState.value.steps = []
-  bigState.value.complete_loops = 0
-  const strs = bigState.value.next_steps!.trim().split(/[ ]+/)
-  for (let i = 0; i < strs.length; i++) {
-    bigState.value.steps.push({ text: strs[i]!, class: 'nothin' })
-  }
-  highlightThing(0, 0)
-  bigState.value.next_steps = ''
-  saveState()
+function getPatternString(): string {
+  return localStorage.getItem('stitch_pattern') || ''
 }
 
-function nextSubStep() {
-  const prev_idx = bigState.value.index
-  bigState.value.index!++
-  bigState.value.individual_steps!++
-  if (bigState.value.index! >= bigState.value.steps!.length) {
-    bigState.value.index = 0
-    bigState.value.complete_loops!++
-  }
-  const next_idx = bigState.value.index
-  highlightThing(prev_idx!, next_idx!)
-}
-
-function prevSubStep() {
-  const prev_idx = bigState.value.index
-  bigState.value.index!--
-  bigState.value.individual_steps!--
-  if (bigState.value.individual_steps! <= 0) {
-    bigState.value.index = 0
-    bigState.value.individual_steps = 0
-    highlightThing(prev_idx!, 0)
-    return
-  }
-  if (bigState.value.index! < 0) {
-    bigState.value.index = bigState.value.steps!.length - 1
-    bigState.value.complete_loops!--
-  }
-  const next_idx = bigState.value.index
-  highlightThing(prev_idx!, next_idx!)
-}
-
-function checkIt(event: KeyboardEvent) {
-  const input_elem = document.getElementById('topInput')
-  if (event.key == ' ' && event.target != input_elem) {
-    nextSubStep()
-    return
-  }
-  if (event.key == 'Backspace' && event.target != input_elem) {
-    prevSubStep()
-    return
-  }
-  if (event.key == '-' && event.target != input_elem) {
-    decrementRound()
-    return
-  }
-  if (event.key == 'p' && event.target != input_elem) {
-    incrementRound()
-    return
-  }
-  //console.log(event)
-}
-
-function decrementRound() {
-  if (bigState.value.round! <= 1) {
-    return
-  }
-  bigState.value.round!--
-  saveState()
-}
-
-function incrementRound() {
-  bigState.value.round!++
-  saveState()
-}
-
-window.addEventListener('keyup', checkIt)
 window.onload = loadState
 </script>
 
 <template>
-  <input
-    id="topInput"
-    @keyup.enter="splitText"
-    :value="bigState.next_steps"
-    @input="onInput"
-    placeholder="Current Round Here"
-  />
-  <button class="bigButton" @click="splitText">Set Steps</button>
+  <textarea id="topInput" rows="6" cols="50" v-model="inputted_steps" placeholder="Pattern Here" />
+  <button id="submitButton" class="bigButton" @click="setPattern">Submit</button>
   <br />
-  <span v-for="step in bigState.steps" :key="step.text" :class="step.class">
-    {{ step.text + ' ' }}
-  </span>
-  <p>Complete Loops: {{ bigState.complete_loops }}</p>
-  <p>Individual Steps: {{ bigState.individual_steps }}</p>
-  <button class="bigButton" @click="prevSubStep">Prev Step</button>
-  <button class="bigButton" @click="nextSubStep">Next Step</button>
+  <span v-if="error_message" class="highlighted">{{ error_message }}</span>
+  <br v-if="error_message" />
+  <CurrentRow
+    v-if="!pattern_complete && pattern"
+    :key="pattern_num + '' + row_index"
+    :row="pattern ? pattern.rows[row_index] : { items: [] }"
+    :row_num="row_index + 1"
+    :next-row="nextRow"
+    :prev-row="prevRow"
+    :init_end_of_row="init_end_of_row"
+    :item_index="item_index"
+    :init_step_count="init_step_count"
+  />
+  <span v-if="pattern_complete">Pattern complete!</span>
   <br /><br />
-  <button class="bigButton" @click="decrementRound">-Round</button>
-  <span>Round Number: {{ bigState.round }}</span>
-  <button class="bigButton" @click="incrementRound">+Round</button>
+  <span>Round Number: {{ row_index + 1 }}</span>
+  <br /><br />
+  <LinkCreator :pattern_string="getPatternString()" />
 </template>
 
 <style>
 body {
   background-color: #333333;
+}
+#submitButton {
+  margin-left: 10px;
 }
 .bigButton {
   font-size: 20pt;
@@ -198,11 +243,11 @@ body {
   margin-top: 60px;
   font-size: 24pt;
 }
-.currentIndex {
+.highlighted {
   color: red;
 }
 #topInput {
-  line-height: 24pt;
+  line-height: 16pt;
   vertical-align: bottom;
 }
 </style>
