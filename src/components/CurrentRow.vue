@@ -64,12 +64,20 @@ function getStitch(item: Item) {
 }
 
 function nextStitch(): void {
+  if (row.items.length === 0) {
+    nextRow()
+    return
+  }
   const stiches_done = item_displays.value![cur_index.value]!.nextStitch()
   individual_step_count.value += stiches_done
   localStorage.setItem('stitch_count', individual_step_count.value + '')
 }
 
 function prevStitch(): void {
+  if (row.items.length === 0) {
+    prevRow()
+    return
+  }
   const stitches_undone = item_displays.value![cur_index.value]!.prevStitch()
   individual_step_count.value -= stitches_undone
   if (individual_step_count.value < 0) {
@@ -120,6 +128,7 @@ function resetCount(): void {
         : null
     "
   />
+  <p v-if="row.comment">{{ row.comment }}</p>
   <p>Individual Steps: {{ individual_step_count }}</p>
   <button class="bigButton" @click="prevStitch">Prev Step</button>
   <button class="bigButton" @click="nextStitch">Next Step</button>
