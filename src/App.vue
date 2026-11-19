@@ -201,6 +201,7 @@ window.onload = loadState
 </script>
 
 <template>
+  <h3>{{ pattern.title }}</h3>
   <textarea id="topInput" rows="6" cols="50" v-model="inputted_steps" placeholder="Pattern Here" />
   <button id="submitButton" class="bigButton" @click="setPattern">Submit</button>
   <br />
