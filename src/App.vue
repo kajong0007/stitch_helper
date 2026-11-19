@@ -201,6 +201,7 @@ window.onload = loadState
 </script>
 
 <template>
+  <h3>{{ pattern.title }}</h3>
   <textarea id="topInput" rows="6" cols="50" v-model="inputted_steps" placeholder="Pattern Here" />
   <button id="submitButton" class="bigButton" @click="setPattern">Submit</button>
   <br />
@@ -219,7 +220,7 @@ window.onload = loadState
   />
   <span v-if="pattern_complete">Pattern complete!</span>
   <br /><br />
-  <span>Round Number: {{ row_index + 1 }}</span>
+  <span>Round Number: {{ pattern ? pattern.rows[row_index].rowNum : 1 }}</span>
   <br /><br />
   <LinkCreator :pattern_string="getPatternString()" />
 </template>
