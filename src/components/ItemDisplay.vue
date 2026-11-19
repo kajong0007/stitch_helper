@@ -97,6 +97,13 @@ function getCountDisplay(): string {
   }
   return '*' + (item.count - count.value)
 }
+
+function getClosingDelimiter(): string {
+  if (item.delimiter === '(') {
+    return ')'
+  }
+  return ']'
+}
 </script>
 
 <template>
@@ -104,7 +111,7 @@ function getCountDisplay(): string {
     {{ item.stitch + getCountDisplay() }}
   </span>
   <span v-if="item.items">
-    [
+    {{ item.delimiter }}
     <ItemDisplay
       v-for="(subitem, index) in item.items"
       :key="index"
@@ -120,7 +127,7 @@ function getCountDisplay(): string {
           : null
       "
     />
-    ]{{ getCountDisplay() }}
+    {{ getClosingDelimiter() }}{{ getCountDisplay() }}
   </span>
 </template>
 
