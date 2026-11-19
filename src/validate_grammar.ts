@@ -66,10 +66,30 @@ function isPattern(value: any): value is Pattern {
   return true
 }
 
+function setRowNumbers(pattern: Pattern): void {
+  let curNum = 1
+  for (const row of pattern.rows) {
+    // If the row number is manually set, use that
+    if (row.rowNum && row.rowNum > 0) {
+      curNum = row.rowNum + 1
+    }
+    // Iterate for normal, non-set rows
+    else if (row.items.length > 0) {
+      row.rowNum = curNum
+      curNum++
+    }
+    // Comment-only rows
+    else {
+      row.rowNum = curNum - 0.5
+    }
+  }
+}
+
 function runParser(s: string): void | Pattern {
   const maybe_parsed = gParse(s)
   if (isPattern(maybe_parsed)) {
     const p: Pattern = maybe_parsed
+    setRowNumbers(p)
     return p
   } else {
     console.log(maybe_parsed)
